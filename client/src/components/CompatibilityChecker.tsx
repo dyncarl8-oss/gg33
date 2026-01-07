@@ -49,20 +49,28 @@ export function CompatibilityChecker({ userBirthDate, userName, userFullName }: 
   const [phase, setPhase] = useState<AnalysisPhase>('idle');
   const [progress, setProgress] = useState(0);
 
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const aiMutation = useMutation({
     mutationFn: async (data: { person1: any; person2: any; overallScore: number; level: string }) => {
       const response = await apiRequest('POST', '/api/compatibility', data);
       const json = await response.json();
+      if (!response.ok) {
+        throw new Error(json.error || 'Failed to generate compatibility insights');
+      }
       return json.insights as AIInsights;
     },
     onSuccess: (insights) => {
       setAiInsights(insights);
       setPhase('complete');
       setProgress(100);
+      setErrorMessage(null);
     },
-    onError: () => {
+    onError: (error: Error) => {
       setPhase('complete');
       setProgress(100);
+      setErrorMessage(error.message || 'Failed to generate compatibility insights');
+      console.error('Compatibility error:', error);
     },
   });
 
@@ -88,6 +96,7 @@ export function CompatibilityChecker({ userBirthDate, userName, userFullName }: 
     setProgress(0);
     setResult(null);
     setAiInsights(null);
+    setErrorMessage(null);
 
     await new Promise(resolve => setTimeout(resolve, 800));
     
@@ -109,7 +118,15 @@ export function CompatibilityChecker({ userBirthDate, userName, userFullName }: 
     setPhase('generating');
     setProgress(60);
 
-    aiMutation.mutate({
+    // Set a timeout for the AI mutation (35 seconds total)
+    const timeoutId = setTimeout(() => {
+      if (phase === 'generating') {
+        aiMutation.mutate = () => Promise.reject(new Error('Analysis is taking longer than expected. Please try again.'));
+      }
+    }, 35000);
+
+    try {
+      await aiMutation.mutateAsync({
       person1: {
         name: person1Name,
         birthDate: userBirthDate.toISOString(),
@@ -127,7 +144,7 @@ export function CompatibilityChecker({ userBirthDate, userName, userFullName }: 
       },
       person2: {
         name: targetName,
-        birthDate: date.toISOString(),
+        birthDate: targetDate.toISOString(),
         lifePathNumber: compatibility.person2Profile.lifePathNumber,
         expressionNumber: compatibility.person2Profile.expressionNumber,
         soulUrgeNumber: compatibility.person2Profile.soulUrgeNumber,
@@ -142,8 +159,16 @@ export function CompatibilityChecker({ userBirthDate, userName, userFullName }: 
       },
       overallScore: compatibility.overallScore,
       level: compatibility.level,
-    });
-  };
+      });
+      clearTimeout(timeoutId);
+    } catch (error) {
+      clearTimeout(timeoutId);
+      setPhase('complete');
+      setProgress(100);
+      setErrorMessage(error.message || 'Failed to generate compatibility insights');
+      console.error('Compatibility error:', error);
+    }
+    };
 
   const isAnalyzing = phase !== 'idle' && phase !== 'complete';
 
@@ -544,10 +569,30 @@ export function CompatibilityChecker({ userBirthDate, userName, userFullName }: 
                   <p className="text-0 text-gray-10">Exercise caution</p>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+              </div>
+              </div>
+              </div>
+
+              {/* Error Message */}
+              {errorMessage && phase === 'complete' && !aiInsights && (
+                <div className="p-4 rounded-lg bg-red-a2 border border-red-a4 text-center" data-testid="compatibility-error">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <AlertTriangle className="w-5 h-5 text-red-9" />
+                    <h4 className="text-3 font-medium text-red-11">Analysis Error</h4>
+                  </div>
+                  <p className="text-2 text-red-11">{errorMessage}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3"
+                    onClick={handleCheck}
+                    disabled={!targetName || !targetDate}
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              )}
+              </CardContent>
+              </Card>
+              );
+              }
