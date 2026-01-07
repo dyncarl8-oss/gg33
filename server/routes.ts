@@ -333,7 +333,7 @@ export async function registerRoutes(
   app.post("/api/compatibility", async (req, res) => {
     try {
       const { person1, person2 } = req.body;
-      
+
       if (!person1 || !person2 || !person1.name || !person2.name || !person1.birthDate || !person2.birthDate) {
         return res.status(400).json({ error: "Missing required profile data for both persons" });
       }
@@ -372,15 +372,29 @@ export async function registerRoutes(
       const overallScore = req.body.overallScore || 50;
       const level = req.body.level || 'Neutral';
 
-      const aiInsights = await generateCompatibilityInsights(profile1, profile2, overallScore, level);
-      
-      res.json({ 
+      // Set timeout for AI generation (30 seconds max)
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('AI generation timeout')), 30000)
+      );
+
+      const aiInsightsPromise = generateCompatibilityInsights(profile1, profile2, overallScore, level);
+
+      const aiInsights = await Promise.race([
+        aiInsightsPromise,
+        timeoutPromise
+      ]);
+
+      res.json({
         success: true,
-        insights: aiInsights 
+        insights: aiInsights
       });
     } catch (error) {
       console.error("Error generating compatibility insights:", error);
-      res.status(500).json({ error: "Failed to generate compatibility insights" });
+      if (error.message === 'AI generation timeout') {
+        res.status(408).json({ error: "AI generation took too long. Please try again." });
+      } else {
+        res.status(500).json({ error: "Failed to generate compatibility insights" });
+      }
     }
   });
 
