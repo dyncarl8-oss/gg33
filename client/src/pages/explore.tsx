@@ -90,7 +90,15 @@ function LoadingSkeleton() {
 }
 
 function TrendingEnergiesDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery<{
+    universalDay: number;
+    todayTitle: string;
+    todayTheme: string;
+    date: string;
+    topLifePaths: Array<{ number: number; count: number; title: string; theme: string }>;
+    topElements: Array<{ element: string; count: number }>;
+    representativeCues: Array<{ id: number; name: string; type: string; energySignature: string }>;
+  }>({
     queryKey: ['/api/explore/trending-energies'],
     enabled: open,
   });

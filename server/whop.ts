@@ -5,7 +5,7 @@ const WHOP_API_KEY = process.env.WHOP_API_KEY;
 const WHOP_APP_ID = process.env.WHOP_APP_ID;
 
 export const whopSdk = WHOP_API_KEY && WHOP_APP_ID
-  ? new Whop({ apiKey: WHOP_API_KEY, appId: WHOP_APP_ID })
+  ? new Whop({ apiKey: WHOP_API_KEY, appID: WHOP_APP_ID })
   : null;
 
 if (!WHOP_API_KEY || !WHOP_APP_ID) {

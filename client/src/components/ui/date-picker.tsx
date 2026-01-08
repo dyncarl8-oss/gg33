@@ -255,7 +255,6 @@ export function DatePicker({
               month={month}
               onMonthChange={setMonth}
               showOutsideDays={true}
-              hideNavigation={true}
               className="p-0"
               classNames={{
                 months: "flex flex-col",

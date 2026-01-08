@@ -390,7 +390,7 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error("Error generating compatibility insights:", error);
-      if (error.message === 'AI generation timeout') {
+      if (error instanceof Error && error.message === 'AI generation timeout') {
         res.status(408).json({ error: "AI generation took too long. Please try again." });
       } else {
         res.status(500).json({ error: "Failed to generate compatibility insights" });
