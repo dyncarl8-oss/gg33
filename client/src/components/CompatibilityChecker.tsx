@@ -165,7 +165,7 @@ export function CompatibilityChecker({ userBirthDate, userName, userFullName }: 
       clearTimeout(timeoutId);
       setPhase('complete');
       setProgress(100);
-      setErrorMessage(error.message || 'Failed to generate compatibility insights');
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to generate compatibility insights');
       console.error('Compatibility error:', error);
     }
     };

@@ -81,6 +81,10 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
         iframeSdkAppId: import.meta.env.VITE_WHOP_APP_ID,
       });
       
+      if (!iframeSdk) {
+        throw new Error('Whop SDK not initialized');
+      }
+
       const purchaseResult = await iframeSdk.inAppPurchase({
         planId: checkoutData.planId,
         id: checkoutData.id,

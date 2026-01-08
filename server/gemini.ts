@@ -5,7 +5,8 @@ import { GoogleGenAI } from "@google/genai";
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
 // Model configuration with fallback
-const PRIMARY_MODEL = "gemini-2.5-pro";
+const PRIMARY_MODEL = "gemini-3-pro-preview";
+const SECONDARY_MODEL = "gemini-2.5-pro";
 const FALLBACK_MODEL = "gemini-flash-latest";
 
 // Helper function to generate content with automatic fallback
@@ -24,23 +25,40 @@ async function generateWithFallback(prompt: string): Promise<string> {
     return response.text;
   } catch (primaryError) {
     console.warn(`Primary model (${PRIMARY_MODEL}) failed:`, primaryError);
-    console.log(`Falling back to ${FALLBACK_MODEL}...`);
+    console.log(`Falling back to ${SECONDARY_MODEL}...`);
     
     try {
-      const fallbackResponse = await ai.models.generateContent({
-        model: FALLBACK_MODEL,
+      const secondaryResponse = await ai.models.generateContent({
+        model: SECONDARY_MODEL,
         contents: prompt,
       });
       
-      if (!fallbackResponse.text) {
-        throw new Error("Empty response from fallback model");
+      if (!secondaryResponse.text) {
+        throw new Error("Empty response from secondary model");
       }
       
-      console.log(`Successfully generated with fallback model ${FALLBACK_MODEL}`);
-      return fallbackResponse.text;
-    } catch (fallbackError) {
-      console.error(`Fallback model (${FALLBACK_MODEL}) also failed:`, fallbackError);
-      throw fallbackError;
+      console.log(`Successfully generated with secondary model ${SECONDARY_MODEL}`);
+      return secondaryResponse.text;
+    } catch (secondaryError) {
+      console.warn(`Secondary model (${SECONDARY_MODEL}) failed:`, secondaryError);
+      console.log(`Falling back to ${FALLBACK_MODEL}...`);
+      
+      try {
+        const fallbackResponse = await ai.models.generateContent({
+          model: FALLBACK_MODEL,
+          contents: prompt,
+        });
+        
+        if (!fallbackResponse.text) {
+          throw new Error("Empty response from fallback model");
+        }
+        
+        console.log(`Successfully generated with fallback model ${FALLBACK_MODEL}`);
+        return fallbackResponse.text;
+      } catch (fallbackError) {
+        console.error(`Fallback model (${FALLBACK_MODEL}) also failed:`, fallbackError);
+        throw fallbackError;
+      }
     }
   }
 }
@@ -478,7 +496,7 @@ export interface ChatResponse {
 }
 
 // Chat model - using pro for quality
-const CHAT_MODEL = "gemini-2.5-pro";
+const CHAT_MODEL = "gemini-3-pro-preview";
 
 // Build user context once - this is the expensive calculation that should only happen once per session
 export function buildUserContext(profile: ChatUserProfile): { systemContext: string; firstName: string } {
