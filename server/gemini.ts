@@ -247,6 +247,11 @@ export async function generateDailyEnergy(
 ): Promise<DailyEnergyResponse> {
   const prompt = `You are a professional intuitive guide and master numerologist. Your goal is to provide a "Perfect Daily Energy" reading that is technically honest and deeply personal.
 
+IMPORTANT CONTEXT:
+Today is ${todayDate}.
+The user sees "Day ${personalDayNumber}" as their primary frequency in the app interface. 
+You MUST prioritize explaining why "Day ${personalDayNumber}" (their Personal Day) is significant for them today.
+
 HIDDEN PROFILE DATA:
 - Name: ${profile.name}
 - Life Path Number: ${profile.lifePathNumber}
@@ -254,32 +259,32 @@ HIDDEN PROFILE DATA:
 - Soul Urge Number: ${profile.soulUrgeNumber}
 - Western Zodiac: ${profile.westernZodiac}
 - Chinese Zodiac: ${profile.chineseZodiac}
-- Personal Day Number: ${personalDayNumber}
-- Universal Day Number: ${universalDayNumber}
-- Today's Date: ${todayDate}
+- Personal Day Number: ${personalDayNumber} (User's primary focus)
+- Universal Day Number: ${universalDayNumber} (The collective background frequency)
 
 CRITICAL INSTRUCTIONS:
-1. CALCULATE ALIGNMENT: Mentally evaluate the collision between the user's Life Path (${profile.lifePathNumber}) and today's Personal Day (${personalDayNumber}). 
+1. CALCULATE ALIGNMENT: Evaluate the collision between the user's Life Path (${profile.lifePathNumber}) and today's Personal Day (${personalDayNumber}). 
    - High Alignment (80-100): Numbers are harmonious (e.g., 1 & 1, 3 & 5, 2 & 6, or master numbers).
    - Moderate (40-79): Neutral or standard daily flow.
-   - Low Alignment (0-39): Numbers clash or represent friction (e.g., 1 & 4, 5 & 8, or intense karmic cycles).
+   - Low Alignment (0-39): Numbers clash or represent friction.
 
-2. BE TECHNICALLY HONEST: If it's a "bad" or high-friction day, give a low score (e.g., 15-30) and use a protective/cautious tone. Do not fake positivity. If it's a peak power day, use an authoritative, high-energy tone.
+2. BE TECHNICALLY HONEST: Give an accurate score (0-100). If it's a "bad" or high-friction day, give a low score and use a protective/cautious tone. If it's a peak power day, use an authoritative, high-energy tone.
 
-3. PERSONALIZED INSIGHT (The "Why"): In the description, explicitly mention WHY today feels this way by referencing the interaction between their numbers. Use second person ("You", "Your").
+3. PERSONALIZED INSIGHT (The "Why"): Start by referencing their Personal Day ${personalDayNumber}. Explain WHY today feels this way by referencing the interaction between their Life Path ${profile.lifePathNumber} and today's frequency. Use second person ("You", "Your"). 
+
+EXAMPLE INSIGHT START: "Since you are a Life Path ${profile.lifePathNumber}, today's Personal Day ${personalDayNumber} energy feels like..."
 
 STYLE REQUIREMENTS:
 - Write in SECOND PERSON.
 - DO NOT mention technical astrology terms like "houses" or "trines".
-- DO focus on the interaction of their Life Path and the Day energy.
 - "dos" and "donts" MUST be exactly 3 items each, 2-3 words max.
-- "theme" MUST be 2-3 words only (e.g., "The Strategic Shift").
+- "theme" MUST be 2-3 words only.
 
 You MUST respond with valid JSON only. Use this exact format:
 {
   "theme": "The Strategic Shift",
   "energyScore": 88,
-  "description": "Your Life Path ${profile.lifePathNumber} is intersecting with today's Personal Day ${personalDayNumber} energy. This creates a specific [Insight Type]—where your [Trait] finally aligns with [Day Energy]. Explain the specific if/then logic for today.",
+  "description": "A 2-3 sentence personalized insight focusing on why Personal Day ${personalDayNumber} matters for a Life Path ${profile.lifePathNumber} today.",
   "dos": ["Sign contracts", "Speak up", "Trust logic"],
   "donts": ["Over-analyze", "Seek advice", "Postpone starts"],
   "focusArea": "Project launches",
