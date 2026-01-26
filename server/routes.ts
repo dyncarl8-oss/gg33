@@ -15,7 +15,7 @@ export async function registerRoutes(
   // Get current user profile by odisId
   app.get("/api/profile/:odisId", async (req, res) => {
     const { odisId } = req.params;
-    
+
     try {
       const user = await storage.getUserByOdisId(odisId);
       if (!user) {
@@ -31,7 +31,7 @@ export async function registerRoutes(
   // Create new user profile (generates odisId)
   app.post("/api/profile", async (req: WhopRequest, res) => {
     const { fullName, birthDate, birthTime, birthLocation } = req.body;
-    
+
     if (!fullName || !birthDate) {
       return res.status(400).json({ error: "Missing required fields: fullName and birthDate" });
     }
@@ -39,26 +39,26 @@ export async function registerRoutes(
     try {
       const odisId = generateOdisId();
       const whopUserId = req.whopUser?.userId;
-      
+
       // If we have a Whop user, fetch their profile
       let whopUsername: string | undefined;
       let whopProfilePictureUrl: string | undefined;
       let whopAccessLevel: 'customer' | 'admin' | 'no_access' | undefined;
-      
+
       if (whopUserId) {
         const whopProfile = await getWhopUserProfile(whopUserId);
         if (whopProfile) {
           whopUsername = whopProfile.username;
           whopProfilePictureUrl = whopProfile.profilePictureUrl ?? undefined;
         }
-        
+
         // Check access level if we have an experience ID
         if (req.experienceId) {
           const access = await checkAccess(req.experienceId, whopUserId);
           whopAccessLevel = access.accessLevel;
         }
       }
-      
+
       const user = await storage.createUser({
         odisId,
         fullName,
@@ -80,12 +80,12 @@ export async function registerRoutes(
   // Get user by Whop ID (protected - only own profile)
   app.get("/api/profile/whop/:whopUserId", requireWhopAuth, async (req: WhopRequest, res) => {
     const { whopUserId } = req.params;
-    
+
     // Users can only access their own profile
     if (req.whopUser!.userId !== whopUserId) {
       return res.status(403).json({ error: "You can only access your own profile" });
     }
-    
+
     try {
       const user = await storage.getUserByWhopId(whopUserId);
       if (!user) {
@@ -101,29 +101,29 @@ export async function registerRoutes(
   // Get current authenticated Whop user's profile (or create placeholder)
   app.get("/api/me", async (req: WhopRequest, res) => {
     const whopUserId = req.whopUser?.userId;
-    
+
     if (!whopUserId) {
       return res.status(401).json({ error: "Not authenticated with Whop" });
     }
-    
+
     try {
       // Check if user exists in our database
       let user = await storage.getUserByWhopId(whopUserId);
-      
+
       if (user) {
         // User exists, sync their Whop profile and access level
         const whopProfile = await getWhopUserProfile(whopUserId);
-        
+
         // Check current access level only if experienceId is available
         let whopAccessLevel: 'customer' | 'admin' | 'no_access' | undefined;
         if (req.experienceId) {
           const access = await checkAccess(req.experienceId, whopUserId);
           whopAccessLevel = access.accessLevel;
         }
-        
+
         // Build update payload with only fields that have actual values
         const updatePayload: { whopUsername?: string; whopProfilePictureUrl?: string; whopAccessLevel?: 'customer' | 'admin' | 'no_access' } = {};
-        
+
         if (whopProfile?.username && whopProfile.username !== user.whopUsername) {
           updatePayload.whopUsername = whopProfile.username;
         }
@@ -133,19 +133,19 @@ export async function registerRoutes(
         if (whopAccessLevel && whopAccessLevel !== user.whopAccessLevel) {
           updatePayload.whopAccessLevel = whopAccessLevel;
         }
-        
+
         // Only update if there are actual changes
         if (Object.keys(updatePayload).length > 0) {
           const updated = await storage.updateWhopProfile(whopUserId, updatePayload);
           if (updated) user = updated;
         }
-        
+
         res.json({ user, needsOnboarding: false });
       } else {
         // User doesn't exist yet - they need to complete onboarding
         const whopProfile = await getWhopUserProfile(whopUserId);
-        res.json({ 
-          user: null, 
+        res.json({
+          user: null,
           needsOnboarding: true,
           whopProfile: whopProfile ? {
             whopUserId,
@@ -172,11 +172,11 @@ export async function registerRoutes(
         birthTime,
         birthLocation,
       });
-      
+
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
-      
+
       res.json({ success: true, user });
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -187,7 +187,7 @@ export async function registerRoutes(
   // Get daily energy reading for a user on a specific date
   app.get("/api/daily-energy/:odisId/:date", async (req, res) => {
     const { odisId, date } = req.params;
-    
+
     try {
       const energy = await storage.getDailyEnergy(odisId, date);
       if (!energy) {
@@ -203,7 +203,7 @@ export async function registerRoutes(
   // Generate and save daily energy reading
   app.post("/api/daily-energy", async (req, res) => {
     const { odisId, profile, personalDayNumber, universalDayNumber, energyScore, todayDate, date } = req.body;
-    
+
     if (!odisId || !profile || !personalDayNumber || !universalDayNumber || !date) {
       return res.status(400).json({ error: "Missing required data" });
     }
@@ -217,14 +217,14 @@ export async function registerRoutes(
 
       // Generate new reading using AI
       const aiReading = await generateDailyEnergy(profile, personalDayNumber, universalDayNumber, todayDate);
-      
+
       // Save to database
       const savedEnergy = await storage.saveDailyEnergy({
         odisId,
         date,
         personalDayNumber,
         universalDayNumber,
-        energyScore: energyScore || 50,
+        energyScore: aiReading.energyScore,
         theme: aiReading.theme,
         description: aiReading.description,
         dos: aiReading.dos,
@@ -232,7 +232,7 @@ export async function registerRoutes(
         focusArea: aiReading.focusArea,
         affirmation: aiReading.affirmation,
       });
-      
+
       res.json({ energy: savedEnergy, cached: false });
     } catch (error) {
       console.error("Error generating/saving daily energy:", error);
@@ -243,7 +243,7 @@ export async function registerRoutes(
   // Get personality insight for a user
   app.get("/api/personality/:odisId", async (req, res) => {
     const { odisId } = req.params;
-    
+
     try {
       const insight = await storage.getPersonalityInsight(odisId);
       if (!insight) {
@@ -259,7 +259,7 @@ export async function registerRoutes(
   // Generate and save personality insight
   app.post("/api/personality", async (req, res) => {
     const { odisId, profile } = req.body;
-    
+
     if (!odisId || !profile) {
       return res.status(400).json({ error: "Missing required data" });
     }
@@ -273,7 +273,7 @@ export async function registerRoutes(
 
       // Generate new insight using AI
       const aiInsight = await generatePersonalityInsights(profile);
-      
+
       // Save to database
       const savedInsight = await storage.savePersonalityInsight({
         odisId,
@@ -294,7 +294,7 @@ export async function registerRoutes(
           chineseZodiac: profile.chineseZodiac,
         },
       });
-      
+
       res.json({ insight: savedInsight, cached: false });
     } catch (error) {
       console.error("Error generating/saving personality insight:", error);
@@ -312,11 +312,11 @@ export async function registerRoutes(
 
   app.get("/api/whop/user/:userId", requireWhopAuth, async (req: WhopRequest, res) => {
     const { userId } = req.params;
-    
+
     if (req.whopUser!.userId !== userId) {
       return res.status(403).json({ error: "You can only access your own profile" });
     }
-    
+
     try {
       const whopProfile = await getWhopUserProfile(userId);
       if (!whopProfile) {
@@ -333,7 +333,7 @@ export async function registerRoutes(
   app.post("/api/compatibility", async (req, res) => {
     try {
       const { person1, person2 } = req.body;
-      
+
       if (!person1 || !person2 || !person1.name || !person2.name || !person1.birthDate || !person2.birthDate) {
         return res.status(400).json({ error: "Missing required profile data for both persons" });
       }
@@ -373,10 +373,10 @@ export async function registerRoutes(
       const level = req.body.level || 'Neutral';
 
       const aiInsights = await generateCompatibilityInsights(profile1, profile2, overallScore, level);
-      
-      res.json({ 
+
+      res.json({
         success: true,
-        insights: aiInsights 
+        insights: aiInsights
       });
     } catch (error) {
       console.error("Error generating compatibility insights:", error);
@@ -388,7 +388,7 @@ export async function registerRoutes(
   app.post("/api/ai/personality", async (req, res) => {
     try {
       const profile: UserNumerologyProfile = req.body;
-      
+
       if (!profile.name || !profile.lifePathNumber) {
         return res.status(400).json({ error: "Missing required profile data" });
       }
@@ -404,7 +404,7 @@ export async function registerRoutes(
   app.post("/api/ai/daily-energy", async (req, res) => {
     try {
       const { profile, personalDayNumber, universalDayNumber, todayDate } = req.body;
-      
+
       if (!profile || !personalDayNumber || !universalDayNumber) {
         return res.status(400).json({ error: "Missing required data" });
       }
@@ -420,7 +420,7 @@ export async function registerRoutes(
   // CueChats - Initialize chat session (builds user context once)
   app.post("/api/chat/init", async (req, res) => {
     const { odisId } = req.body;
-    
+
     if (!odisId) {
       return res.status(400).json({ error: "Missing odisId" });
     }
@@ -439,9 +439,9 @@ export async function registerRoutes(
         birthLocation: user.birthLocation || undefined,
       });
 
-      res.json({ 
-        success: true, 
-        systemContext, 
+      res.json({
+        success: true,
+        systemContext,
         firstName,
         message: `Chat initialized for ${firstName}. Your profile context is now loaded.`
       });
@@ -454,7 +454,7 @@ export async function registerRoutes(
   // CueChats - Session-based chat (uses pre-computed context - more efficient)
   app.post("/api/chat/session", async (req, res) => {
     const { message, systemContext, firstName, conversationHistory } = req.body;
-    
+
     if (!message || !systemContext || !firstName) {
       return res.status(400).json({ error: "Missing required data. Please start a new chat." });
     }
@@ -490,7 +490,7 @@ export async function registerRoutes(
   // CueChats - Legacy AI Chat endpoint (kept for backward compatibility)
   app.post("/api/chat", async (req, res) => {
     const { odisId, message, conversationHistory } = req.body;
-    
+
     if (!odisId || !message) {
       return res.status(400).json({ error: "Missing required data" });
     }
@@ -535,7 +535,7 @@ export async function registerRoutes(
   // CueChats - Streaming AI Chat endpoint for faster responses
   app.post("/api/chat/stream", async (req, res) => {
     const { odisId, message, conversationHistory } = req.body;
-    
+
     if (!odisId || !message) {
       return res.status(400).json({ error: "Missing required data" });
     }
@@ -578,7 +578,7 @@ export async function registerRoutes(
       for await (const chunk of stream) {
         res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
       }
-      
+
       res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
       res.end();
     } catch (error) {
@@ -637,7 +637,7 @@ export async function registerRoutes(
       // Text search (name, description, category)
       if (q) {
         const searchTerm = q.toLowerCase();
-        filtered = filtered.filter(cue => 
+        filtered = filtered.filter(cue =>
           cue.name.toLowerCase().includes(searchTerm) ||
           (cue.description && cue.description.toLowerCase().includes(searchTerm)) ||
           (cue.category && cue.category.toLowerCase().includes(searchTerm))
@@ -661,7 +661,7 @@ export async function registerRoutes(
       // Filter by energy signature
       if (energy) {
         const energyTerm = energy.toLowerCase();
-        filtered = filtered.filter(cue => 
+        filtered = filtered.filter(cue =>
           cue.energySignature.toLowerCase().includes(energyTerm)
         );
       }
@@ -669,7 +669,7 @@ export async function registerRoutes(
       // Filter by category
       if (category) {
         const categories = category.split(',').map(c => c.trim().toLowerCase());
-        filtered = filtered.filter(cue => 
+        filtered = filtered.filter(cue =>
           cue.category && categories.some(c => cue.category!.toLowerCase().includes(c))
         );
       }
@@ -677,7 +677,7 @@ export async function registerRoutes(
       // Filter by country
       if (country) {
         const countries = country.split(',').map(c => c.trim().toLowerCase());
-        filtered = filtered.filter(cue => 
+        filtered = filtered.filter(cue =>
           cue.country && countries.some(c => cue.country!.toLowerCase().includes(c))
         );
       }
@@ -707,17 +707,17 @@ export async function registerRoutes(
   app.get("/api/cues/:id", (req, res) => {
     const id = parseInt(req.params.id);
     const cue = parsedCues.find(c => c.id === id);
-    
+
     if (!cue) {
       return res.status(404).json({ error: "Cue not found" });
     }
-    
+
     // Parse date for zodiac calculations
     const date = new Date(cue.foundedOrBirth);
     const year = date.getFullYear();
     const month = date.getMonth() + 1;
     const day = date.getDate();
-    
+
     // Chinese Zodiac calculation (matches client/src/lib/numerology.ts)
     const chineseAnimals = ['Rat', 'Ox', 'Tiger', 'Rabbit', 'Dragon', 'Snake', 'Horse', 'Goat', 'Monkey', 'Rooster', 'Dog', 'Pig'];
     const chineseElements = ['Wood', 'Fire', 'Earth', 'Metal', 'Water'];
@@ -729,7 +729,7 @@ export async function registerRoutes(
       element: chineseElements[elementIndex],
       yinYang: year % 2 === 0 ? 'Yang' : 'Yin'
     };
-    
+
     // Western Zodiac calculation (matches client/src/lib/numerology.ts)
     const zodiacSigns = [
       { sign: 'Capricorn', element: 'Earth', modality: 'Cardinal', rulingPlanet: 'Saturn', traits: ['Ambitious', 'Disciplined', 'Patient'] },
@@ -750,7 +750,7 @@ export async function registerRoutes(
       [4, 20, 5, 20], [5, 21, 6, 20], [6, 21, 7, 22], [7, 23, 8, 22],
       [8, 23, 9, 22], [9, 23, 10, 22], [10, 23, 11, 21], [11, 22, 12, 21],
     ];
-    
+
     let westernZodiac = zodiacSigns[0];
     for (let i = 0; i < zodiacDateRanges.length; i++) {
       const [startMonth, startDay, endMonth, endDay] = zodiacDateRanges[i];
@@ -761,13 +761,13 @@ export async function registerRoutes(
         }
       } else {
         if ((month === startMonth && day >= startDay) || (month === endMonth && day <= endDay) ||
-            (month > startMonth && month < endMonth)) {
+          (month > startMonth && month < endMonth)) {
           westernZodiac = zodiacSigns[i];
           break;
         }
       }
     }
-    
+
     // Life Path number meanings (matches client numerology)
     const lifePathMeanings: Record<number, { title: string; description: string }> = {
       1: { title: 'The Pioneer', description: 'leadership, innovation, and independence' },
@@ -783,7 +783,7 @@ export async function registerRoutes(
       22: { title: 'The Master Builder', description: 'visionary manifestation and global impact' },
       33: { title: 'The Master Teacher', description: 'compassionate guidance and healing love' },
     };
-    
+
     // Chinese animal traits
     const animalTraits: Record<string, string[]> = {
       'Rat': ['clever', 'quick-witted', 'resourceful'],
@@ -799,10 +799,10 @@ export async function registerRoutes(
       'Dog': ['loyal', 'honest', 'faithful'],
       'Pig': ['compassionate', 'generous', 'diligent'],
     };
-    
+
     const lifePathInfo = lifePathMeanings[cue.lifePathNumber] || { title: 'Unique Path', description: 'distinctive energy patterns' };
     const traits = animalTraits[chineseZodiac.animal] || ['unique', 'special'];
-    
+
     // Generate contextual description based on cue type
     let aboutDescription = '';
     if (cue.type === 'Location') {
@@ -812,8 +812,8 @@ export async function registerRoutes(
     } else {
       aboutDescription = `${cue.name} was founded under ${westernZodiac.sign} energy in the Year of the ${chineseZodiac.yinYang} ${chineseZodiac.element} ${chineseZodiac.animal}. As ${lifePathInfo.title} (Life Path ${cue.lifePathNumber}), this ${cue.category || 'brand'} embodies ${lifePathInfo.description}. The ${chineseZodiac.animal}'s ${traits.join(', ')} nature combined with ${westernZodiac.sign}'s ${westernZodiac.traits.join(', ').toLowerCase()} influence shapes its ${cue.energySignature} signature. ${westernZodiac.rulingPlanet}'s guidance supports its mission of ${cue.description || 'excellence'}.`;
     }
-    
-    res.json({ 
+
+    res.json({
       cue: {
         ...cue,
         chineseZodiac,
@@ -854,43 +854,43 @@ export async function registerRoutes(
       const month = today.getMonth() + 1;
       const day = today.getDate();
       const year = today.getFullYear();
-      
+
       // Calculate universal day number
       const monthReduced = reduceNumber(month);
       const dayReduced = reduceNumber(day);
       const yearReduced = reduceNumber(year.toString().split('').reduce((s, d) => s + parseInt(d), 0));
       const universalDay = reduceNumber(monthReduced + dayReduced + yearReduced);
-      
+
       // Count life paths in cues
       const lifePathCounts: Record<number, number> = {};
       parsedCues.forEach(cue => {
         lifePathCounts[cue.lifePathNumber] = (lifePathCounts[cue.lifePathNumber] || 0) + 1;
       });
-      
+
       // Get top 3 life paths
       const sortedLifePaths = Object.entries(lifePathCounts)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3)
         .map(([num, count]) => ({ number: parseInt(num), count }));
-      
+
       // Count elements (from energy signatures)
       const elementCounts: Record<string, number> = {};
       parsedCues.forEach(cue => {
         const element = cue.energySignature.split(' ')[0];
         elementCounts[element] = (elementCounts[element] || 0) + 1;
       });
-      
+
       const sortedElements = Object.entries(elementCounts)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
         .map(([element, count]) => ({ element, count }));
-      
+
       // Get representative cues for today's universal day
       const todaysCues = parsedCues
         .filter(c => c.lifePathNumber === universalDay)
         .slice(0, 6)
         .map(c => ({ id: c.id, name: c.name, type: c.type, energySignature: c.energySignature }));
-      
+
       const lifePathMeanings: Record<number, { title: string; theme: string }> = {
         1: { title: 'The Pioneer', theme: 'Leadership and new beginnings' },
         2: { title: 'The Diplomat', theme: 'Partnership and cooperation' },
@@ -905,9 +905,9 @@ export async function registerRoutes(
         22: { title: 'The Master Builder', theme: 'Vision manifested into reality' },
         33: { title: 'The Master Teacher', theme: 'Healing and unconditional love' },
       };
-      
+
       const todayMeaning = lifePathMeanings[universalDay] || { title: 'Universal Energy', theme: 'Balanced vibrations' };
-      
+
       res.json({
         universalDay,
         todayTheme: todayMeaning.theme,
@@ -941,27 +941,27 @@ export async function registerRoutes(
       if (isNaN(birthDate.getTime())) {
         return res.status(400).json({ error: "Invalid birth date" });
       }
-      
+
       const today = new Date();
       const currentMonth = today.getMonth();
       const currentYear = today.getFullYear();
-      
+
       // Calculate user's life path number
       const birthMonth = birthDate.getMonth() + 1;
       const birthDay = birthDate.getDate();
       const birthYear = birthDate.getFullYear();
       const lifePathNumber = reduceNumber(
-        reduceNumber(birthMonth) + 
-        reduceNumber(birthDay) + 
+        reduceNumber(birthMonth) +
+        reduceNumber(birthDay) +
         reduceNumber(birthYear.toString().split('').reduce((s, d) => s + parseInt(d), 0))
       );
-      
+
       // Calculate personal year
       const personalYear = reduceNumber(birthMonth + birthDay + currentYear);
-      
+
       // Get days in current month
       const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-      
+
       const dayRatings: Array<{
         date: string;
         day: number;
@@ -970,7 +970,7 @@ export async function registerRoutes(
         theme: string;
         activities: string[];
       }> = [];
-      
+
       const personalDayThemes: Record<number, { theme: string; activities: string[] }> = {
         1: { theme: 'New Beginnings', activities: ['Start projects', 'Take initiative', 'Lead meetings'] },
         2: { theme: 'Cooperation', activities: ['Partnerships', 'Negotiations', 'Relationship talks'] },
@@ -985,14 +985,14 @@ export async function registerRoutes(
         22: { theme: 'Manifestation', activities: ['Big projects', 'Long-term planning', 'Building legacy'] },
         33: { theme: 'Healing', activities: ['Helping others', 'Counseling', 'Community service'] },
       };
-      
+
       for (let day = 1; day <= daysInMonth; day++) {
         const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        
+
         // Calculate personal month and personal day
         const personalMonth = reduceNumber(personalYear + (currentMonth + 1));
         const personalDay = reduceNumber(personalMonth + day);
-        
+
         // Determine rating based on alignment
         let rating: 'excellent' | 'good' | 'neutral' | 'challenging';
         if (personalDay === lifePathNumber) {
@@ -1004,14 +1004,14 @@ export async function registerRoutes(
         } else {
           rating = 'neutral';
         }
-        
+
         // Master number days are always powerful
         if ([11, 22, 33].includes(personalDay)) {
           rating = 'excellent';
         }
-        
+
         const dayInfo = personalDayThemes[personalDay] || { theme: 'Balance', activities: ['Routine tasks', 'Rest'] };
-        
+
         dayRatings.push({
           date: dateStr,
           day,
@@ -1021,10 +1021,10 @@ export async function registerRoutes(
           activities: dayInfo.activities,
         });
       }
-      
+
       // Find best days (excellent and good)
       const bestDays = dayRatings.filter(d => d.rating === 'excellent' || d.rating === 'good');
-      
+
       res.json({
         lifePathNumber,
         personalYear,
@@ -1044,22 +1044,22 @@ export async function registerRoutes(
   app.get("/api/explore/celebrity-matches", (req, res) => {
     try {
       const { lifePathNumber, energySignature, limit = '12' } = req.query as Record<string, string>;
-      
+
       const limitNum = Math.min(50, parseInt(limit) || 12);
-      
+
       // Filter to persons only
       let celebrities = parsedCues.filter(c => c.type === 'Person');
-      
+
       // Score and sort by match quality
       const scored = celebrities.map(celeb => {
         let score = 0;
         const matches: string[] = [];
-        
+
         if (lifePathNumber && celeb.lifePathNumber === parseInt(lifePathNumber)) {
           score += 50;
           matches.push('Life Path');
         }
-        
+
         if (energySignature) {
           const userElement = energySignature.split(' ')[0];
           const celebElement = celeb.energySignature.split(' ')[0];
@@ -1067,7 +1067,7 @@ export async function registerRoutes(
             score += 30;
             matches.push('Element');
           }
-          
+
           const userEnergy = energySignature.split(' ').slice(1).join(' ');
           const celebEnergy = celeb.energySignature.split(' ').slice(1).join(' ');
           if (userEnergy === celebEnergy) {
@@ -1075,15 +1075,15 @@ export async function registerRoutes(
             matches.push('Energy Type');
           }
         }
-        
+
         return { ...celeb, score, matches };
       });
-      
+
       const matches = scored
         .filter(c => c.score > 0)
         .sort((a, b) => b.score - a.score)
         .slice(0, limitNum);
-      
+
       res.json({
         matches: matches.map(m => ({
           id: m.id,
@@ -1109,18 +1109,18 @@ export async function registerRoutes(
   app.get("/api/explore/travel-destinations", (req, res) => {
     try {
       const { lifePathNumber, element, birthYear } = req.query as Record<string, string>;
-      
+
       const userLifePath = lifePathNumber ? parseInt(lifePathNumber) : null;
       const userBirthYear = birthYear ? parseInt(birthYear) : null;
-      
+
       // Chinese zodiac calculation
       const getChineseZodiac = (year: number): string => {
         const animals = ['Monkey', 'Rooster', 'Dog', 'Pig', 'Rat', 'Ox', 'Tiger', 'Rabbit', 'Dragon', 'Snake', 'Horse', 'Goat'];
         return animals[year % 12];
       };
-      
+
       const userZodiac = userBirthYear ? getChineseZodiac(userBirthYear) : null;
-      
+
       // Zodiac compatibility - which signs thrive together
       const zodiacCompatibility: Record<string, string[]> = {
         'Rat': ['Rat', 'Ox', 'Dragon', 'Monkey'],
@@ -1136,7 +1136,7 @@ export async function registerRoutes(
         'Dog': ['Tiger', 'Rabbit', 'Horse', 'Dog'],
         'Pig': ['Tiger', 'Rabbit', 'Goat', 'Pig'],
       };
-      
+
       // Curated list of countries with significant founding/independence years
       const countries: Array<{
         name: string;
@@ -1145,36 +1145,36 @@ export async function registerRoutes(
         vibe: string;
         bestFor: string;
       }> = [
-        { name: 'United States', year: 1776, description: 'Born in the Year of the Monkey, the USA channels innovation, ambition, and reinvention. From Silicon Valley to Hollywood, this nation rewards clever problem-solvers and dreamers.', vibe: 'Innovation & Ambition', bestFor: 'Entrepreneurs and dreamers' },
-        { name: 'France', year: 1789, description: 'The French Revolution birthed a Rooster-year nation - proud, artistic, and fiercely devoted to beauty and excellence. Paris alone defines romance and sophistication.', vibe: 'Art & Romance', bestFor: 'Artists and romantics' },
-        { name: 'Japan', year: 1868, description: 'The Meiji Restoration in the Year of the Dragon launched Japan into modernity. This Dragon energy fuels its technological innovation and cultural influence.', vibe: 'Innovation & Tradition', bestFor: 'Tech lovers and culture seekers' },
-        { name: 'India', year: 1947, description: 'Independence in the Year of the Pig brought abundance and spiritual depth. From yoga to Bollywood, India offers comfort, wisdom, and vibrant celebration.', vibe: 'Spirituality & Color', bestFor: 'Soul seekers and adventurers' },
-        { name: 'Brazil', year: 1822, description: 'Born in the Year of the Horse, Brazil gallops with freedom, joy, and celebration. Carnival, beaches, and samba embody its passionate spirit.', vibe: 'Joy & Celebration', bestFor: 'Free spirits and dancers' },
-        { name: 'Australia', year: 1901, description: 'Federation in the Year of the Ox built a nation of steady determination and laid-back ambition. From Sydney to the Outback, resilience meets adventure.', vibe: 'Adventure & Balance', bestFor: 'Nature lovers and achievers' },
-        { name: 'Italy', year: 1861, description: 'Unified in the Year of the Rooster, Italy struts with pride in its art, food, and history. Every region celebrates la dolce vita with authentic flair.', vibe: 'Culture & Pleasure', bestFor: 'Foodies and history lovers' },
-        { name: 'Germany', year: 1871, description: 'Born in the Year of the Goat, Germany balances creative artistry with engineering precision. From Beethoven to BMW, innovation meets craftsmanship.', vibe: 'Precision & Creativity', bestFor: 'Engineers and artists' },
-        { name: 'Canada', year: 1867, description: 'Confederation in the Year of the Rabbit brought a nation of diplomatic harmony and natural beauty. Politeness and wilderness coexist perfectly.', vibe: 'Nature & Harmony', bestFor: 'Peace seekers and adventurers' },
-        { name: 'Mexico', year: 1821, description: 'Independence in the Year of the Snake gave Mexico its mysterious allure and ancient wisdom. Mayan pyramids to mariachi - transformation runs deep.', vibe: 'Mystery & Tradition', bestFor: 'Culture lovers and mystics' },
-        { name: 'South Korea', year: 1948, description: 'Founded in the Year of the Rat, South Korea embodies clever innovation and resourcefulness. K-pop, tech, and cuisine - always ahead of trends.', vibe: 'Trendsetting & Innovation', bestFor: 'Trendsetters and tech lovers' },
-        { name: 'Spain', year: 1479, description: 'United in the Year of the Pig, Spain celebrates life with generous warmth. Flamenco, siestas, and fiestas honor pleasure without apology.', vibe: 'Passion & Celebration', bestFor: 'Party lovers and artists' },
-        { name: 'Thailand', year: 1238, description: 'Ancient Sukhothai Kingdom in the Year of the Dog established loyalty, spirituality, and honest hospitality that define Thai culture today.', vibe: 'Spirituality & Warmth', bestFor: 'Spiritual seekers and foodies' },
-        { name: 'United Kingdom', year: 1707, description: 'The Act of Union in the Year of the Pig united kingdoms into an empire of comfort, tradition, and global influence. Tea, royalty, and resilience.', vibe: 'Tradition & Influence', bestFor: 'History buffs and culture lovers' },
-        { name: 'Greece', year: 1821, description: 'Independence in the Year of the Snake revived ancient Dragon wisdom. Birthplace of democracy, philosophy, and the Olympic spirit.', vibe: 'Wisdom & History', bestFor: 'Philosophers and beach lovers' },
-        { name: 'Singapore', year: 1965, description: 'Independence in the Year of the Snake transformed a port into a financial powerhouse. Order, prosperity, and multicultural harmony thrive.', vibe: 'Prosperity & Order', bestFor: 'Business minds and foodies' },
-        { name: 'UAE', year: 1971, description: 'Founded in the Year of the Pig, the UAE turned desert into luxury. Dubai and Abu Dhabi embody ambitious comfort and limitless vision.', vibe: 'Luxury & Ambition', bestFor: 'Luxury seekers and dreamers' },
-        { name: 'South Africa', year: 1994, description: 'New democracy in the Year of the Dog brought loyalty to justice and rainbow nation harmony. Safari, wine, and healing converge.', vibe: 'Healing & Adventure', bestFor: 'Justice seekers and nature lovers' },
-        { name: 'Egypt', year: 1922, description: 'Independence in the Year of the Dog renewed ancient mysteries. The pyramids, Nile, and pharaonic wisdom call to loyal seekers of truth.', vibe: 'Mystery & Ancient Power', bestFor: 'History lovers and mystics' },
-        { name: 'Indonesia', year: 1945, description: 'Independence in the Year of the Rooster gave Indonesia its proud diversity. Bali\'s spirituality to Jakarta\'s hustle - authenticity across 17,000 islands.', vibe: 'Diversity & Spirit', bestFor: 'Island hoppers and soul seekers' },
-        { name: 'Portugal', year: 1143, description: 'Europe\'s oldest nation born in the Year of the Pig pioneered global exploration with generous spirit. Fado, wine, and saudade await.', vibe: 'Exploration & Soul', bestFor: 'Romantics and explorers' },
-        { name: 'Netherlands', year: 1581, description: 'Independence in the Year of the Snake brought clever trade and progressive values. Canals, art, and freedom define this innovative nation.', vibe: 'Freedom & Innovation', bestFor: 'Free thinkers and art lovers' },
-        { name: 'New Zealand', year: 1907, description: 'Dominion in the Year of the Goat blessed this land with creative beauty and peaceful adventure. Middle Earth magic meets Maori wisdom.', vibe: 'Nature & Magic', bestFor: 'Adventurers and dreamers' },
-        { name: 'Morocco', year: 1956, description: 'Independence in the Year of the Monkey brought clever craftsmanship and vibrant reinvention. Marrakech\'s medina swirls with ancient-modern fusion.', vibe: 'Mystery & Craftsmanship', bestFor: 'Adventurers and artists' },
-      ];
-      
+          { name: 'United States', year: 1776, description: 'Born in the Year of the Monkey, the USA channels innovation, ambition, and reinvention. From Silicon Valley to Hollywood, this nation rewards clever problem-solvers and dreamers.', vibe: 'Innovation & Ambition', bestFor: 'Entrepreneurs and dreamers' },
+          { name: 'France', year: 1789, description: 'The French Revolution birthed a Rooster-year nation - proud, artistic, and fiercely devoted to beauty and excellence. Paris alone defines romance and sophistication.', vibe: 'Art & Romance', bestFor: 'Artists and romantics' },
+          { name: 'Japan', year: 1868, description: 'The Meiji Restoration in the Year of the Dragon launched Japan into modernity. This Dragon energy fuels its technological innovation and cultural influence.', vibe: 'Innovation & Tradition', bestFor: 'Tech lovers and culture seekers' },
+          { name: 'India', year: 1947, description: 'Independence in the Year of the Pig brought abundance and spiritual depth. From yoga to Bollywood, India offers comfort, wisdom, and vibrant celebration.', vibe: 'Spirituality & Color', bestFor: 'Soul seekers and adventurers' },
+          { name: 'Brazil', year: 1822, description: 'Born in the Year of the Horse, Brazil gallops with freedom, joy, and celebration. Carnival, beaches, and samba embody its passionate spirit.', vibe: 'Joy & Celebration', bestFor: 'Free spirits and dancers' },
+          { name: 'Australia', year: 1901, description: 'Federation in the Year of the Ox built a nation of steady determination and laid-back ambition. From Sydney to the Outback, resilience meets adventure.', vibe: 'Adventure & Balance', bestFor: 'Nature lovers and achievers' },
+          { name: 'Italy', year: 1861, description: 'Unified in the Year of the Rooster, Italy struts with pride in its art, food, and history. Every region celebrates la dolce vita with authentic flair.', vibe: 'Culture & Pleasure', bestFor: 'Foodies and history lovers' },
+          { name: 'Germany', year: 1871, description: 'Born in the Year of the Goat, Germany balances creative artistry with engineering precision. From Beethoven to BMW, innovation meets craftsmanship.', vibe: 'Precision & Creativity', bestFor: 'Engineers and artists' },
+          { name: 'Canada', year: 1867, description: 'Confederation in the Year of the Rabbit brought a nation of diplomatic harmony and natural beauty. Politeness and wilderness coexist perfectly.', vibe: 'Nature & Harmony', bestFor: 'Peace seekers and adventurers' },
+          { name: 'Mexico', year: 1821, description: 'Independence in the Year of the Snake gave Mexico its mysterious allure and ancient wisdom. Mayan pyramids to mariachi - transformation runs deep.', vibe: 'Mystery & Tradition', bestFor: 'Culture lovers and mystics' },
+          { name: 'South Korea', year: 1948, description: 'Founded in the Year of the Rat, South Korea embodies clever innovation and resourcefulness. K-pop, tech, and cuisine - always ahead of trends.', vibe: 'Trendsetting & Innovation', bestFor: 'Trendsetters and tech lovers' },
+          { name: 'Spain', year: 1479, description: 'United in the Year of the Pig, Spain celebrates life with generous warmth. Flamenco, siestas, and fiestas honor pleasure without apology.', vibe: 'Passion & Celebration', bestFor: 'Party lovers and artists' },
+          { name: 'Thailand', year: 1238, description: 'Ancient Sukhothai Kingdom in the Year of the Dog established loyalty, spirituality, and honest hospitality that define Thai culture today.', vibe: 'Spirituality & Warmth', bestFor: 'Spiritual seekers and foodies' },
+          { name: 'United Kingdom', year: 1707, description: 'The Act of Union in the Year of the Pig united kingdoms into an empire of comfort, tradition, and global influence. Tea, royalty, and resilience.', vibe: 'Tradition & Influence', bestFor: 'History buffs and culture lovers' },
+          { name: 'Greece', year: 1821, description: 'Independence in the Year of the Snake revived ancient Dragon wisdom. Birthplace of democracy, philosophy, and the Olympic spirit.', vibe: 'Wisdom & History', bestFor: 'Philosophers and beach lovers' },
+          { name: 'Singapore', year: 1965, description: 'Independence in the Year of the Snake transformed a port into a financial powerhouse. Order, prosperity, and multicultural harmony thrive.', vibe: 'Prosperity & Order', bestFor: 'Business minds and foodies' },
+          { name: 'UAE', year: 1971, description: 'Founded in the Year of the Pig, the UAE turned desert into luxury. Dubai and Abu Dhabi embody ambitious comfort and limitless vision.', vibe: 'Luxury & Ambition', bestFor: 'Luxury seekers and dreamers' },
+          { name: 'South Africa', year: 1994, description: 'New democracy in the Year of the Dog brought loyalty to justice and rainbow nation harmony. Safari, wine, and healing converge.', vibe: 'Healing & Adventure', bestFor: 'Justice seekers and nature lovers' },
+          { name: 'Egypt', year: 1922, description: 'Independence in the Year of the Dog renewed ancient mysteries. The pyramids, Nile, and pharaonic wisdom call to loyal seekers of truth.', vibe: 'Mystery & Ancient Power', bestFor: 'History lovers and mystics' },
+          { name: 'Indonesia', year: 1945, description: 'Independence in the Year of the Rooster gave Indonesia its proud diversity. Bali\'s spirituality to Jakarta\'s hustle - authenticity across 17,000 islands.', vibe: 'Diversity & Spirit', bestFor: 'Island hoppers and soul seekers' },
+          { name: 'Portugal', year: 1143, description: 'Europe\'s oldest nation born in the Year of the Pig pioneered global exploration with generous spirit. Fado, wine, and saudade await.', vibe: 'Exploration & Soul', bestFor: 'Romantics and explorers' },
+          { name: 'Netherlands', year: 1581, description: 'Independence in the Year of the Snake brought clever trade and progressive values. Canals, art, and freedom define this innovative nation.', vibe: 'Freedom & Innovation', bestFor: 'Free thinkers and art lovers' },
+          { name: 'New Zealand', year: 1907, description: 'Dominion in the Year of the Goat blessed this land with creative beauty and peaceful adventure. Middle Earth magic meets Maori wisdom.', vibe: 'Nature & Magic', bestFor: 'Adventurers and dreamers' },
+          { name: 'Morocco', year: 1956, description: 'Independence in the Year of the Monkey brought clever craftsmanship and vibrant reinvention. Marrakech\'s medina swirls with ancient-modern fusion.', vibe: 'Mystery & Craftsmanship', bestFor: 'Adventurers and artists' },
+        ];
+
       // Process each country with compatibility info
       const destinations = countries.map((country, index) => {
         const zodiacAnimal = getChineseZodiac(country.year);
-        
+
         // Find all signs compatible with this country's zodiac
         const compatibleSigns: string[] = [];
         Object.entries(zodiacCompatibility).forEach(([sign, compatWith]) => {
@@ -1182,21 +1182,21 @@ export async function registerRoutes(
             compatibleSigns.push(sign);
           }
         });
-        
+
         // Calculate score based on user's zodiac match
         let score = 70; // Base score - all destinations are good
         const isUserMatch = userZodiac ? compatibleSigns.includes(userZodiac) : false;
-        
+
         if (isUserMatch) {
           score = 92; // High score for compatible users
         }
-        
+
         // Add life path bonus
         const lifePathFromYear = ((country.year - 1) % 9) + 1;
         if (userLifePath && userLifePath === lifePathFromYear) {
           score = Math.min(98, score + 5);
         }
-        
+
         return {
           id: index + 1,
           name: country.name,
@@ -1210,7 +1210,7 @@ export async function registerRoutes(
           isUserMatch,
         };
       });
-      
+
       // Sort by score (user matches first) then alphabetically
       const sorted = destinations.sort((a, b) => {
         if (a.isUserMatch !== b.isUserMatch) {
@@ -1218,7 +1218,7 @@ export async function registerRoutes(
         }
         return b.score - a.score;
       });
-      
+
       res.json({
         destinations: sorted.map(d => ({
           id: d.id,
@@ -1244,11 +1244,11 @@ export async function registerRoutes(
   app.get("/api/explore/relationship-patterns/:lifePathNumber", (req, res) => {
     try {
       const lifePathNumber = parseInt(req.params.lifePathNumber);
-      
+
       if (isNaN(lifePathNumber) || lifePathNumber < 1 || (lifePathNumber > 9 && ![11, 22, 33].includes(lifePathNumber))) {
         return res.status(400).json({ error: "Invalid life path number" });
       }
-      
+
       // Compatibility matrix based on numerology
       const compatibilityData: Record<number, { best: number[]; good: number[]; challenging: number[]; description: string }> = {
         1: { best: [3, 5], good: [1, 2, 9], challenging: [4, 8], description: 'As a natural leader, you thrive with creative and adventurous partners who appreciate your independence.' },
@@ -1264,16 +1264,16 @@ export async function registerRoutes(
         22: { best: [4, 8], good: [2, 6, 22], challenging: [3, 5], description: 'Your master builder energy pairs with practical visionaries who can help manifest your grand dreams.' },
         33: { best: [6, 9], good: [3, 11, 33], challenging: [1, 8], description: 'Your healing presence attracts compassionate souls who share your dedication to service and unconditional love.' },
       };
-      
+
       const data = compatibilityData[lifePathNumber] || compatibilityData[9];
-      
+
       const lifePathMeanings: Record<number, string> = {
         1: 'The Pioneer', 2: 'The Diplomat', 3: 'The Communicator',
         4: 'The Builder', 5: 'The Freedom Seeker', 6: 'The Nurturer',
         7: 'The Seeker', 8: 'The Powerhouse', 9: 'The Humanitarian',
         11: 'The Illuminator', 22: 'The Master Builder', 33: 'The Master Teacher',
       };
-      
+
       res.json({
         lifePathNumber,
         title: lifePathMeanings[lifePathNumber],
@@ -1298,14 +1298,14 @@ export async function registerRoutes(
   app.get("/api/explore/career-alignment/:lifePathNumber", (req, res) => {
     try {
       const lifePathNumber = parseInt(req.params.lifePathNumber);
-      
+
       if (isNaN(lifePathNumber) || lifePathNumber < 1 || (lifePathNumber > 9 && ![11, 22, 33].includes(lifePathNumber))) {
         return res.status(400).json({ error: "Invalid life path number" });
       }
-      
+
       // Career recommendations by life path with role explanations
       const careerData: Record<number, { industries: string[]; roles: { name: string; reason: string }[]; strengths: string[]; description: string; whyTheseFit: string }> = {
-        1: { 
+        1: {
           industries: ['Technology', 'Entrepreneurship', 'Consulting', 'Sports'],
           roles: [
             { name: 'CEO', reason: 'Your natural leadership and independence make you ideal for top executive positions' },
@@ -1318,7 +1318,7 @@ export async function registerRoutes(
           description: 'Your pioneering spirit makes you a natural entrepreneur and leader in any field.',
           whyTheseFit: 'As a Life Path 1, you thrive when you can chart your own course and lead by example. These roles let you leverage your natural independence and visionary thinking.'
         },
-        2: { 
+        2: {
           industries: ['Healthcare', 'Counseling', 'Human Resources', 'Diplomacy'],
           roles: [
             { name: 'Mediator', reason: 'Your innate ability to see both sides makes conflict resolution your strength' },
@@ -1331,7 +1331,7 @@ export async function registerRoutes(
           description: 'Your diplomatic nature excels in roles requiring partnership and emotional intelligence.',
           whyTheseFit: 'As a Life Path 2, you have a gift for creating harmony and understanding others deeply. These roles utilize your cooperative spirit and emotional sensitivity.'
         },
-        3: { 
+        3: {
           industries: ['Entertainment', 'Marketing', 'Arts', 'Media', 'Writing'],
           roles: [
             { name: 'Creative Director', reason: 'Your artistic vision and ability to inspire makes you a natural creative leader' },
@@ -1344,7 +1344,7 @@ export async function registerRoutes(
           description: 'Your creative gifts flourish in expressive roles that inspire and entertain others.',
           whyTheseFit: 'As a Life Path 3, you were born to express and create. These roles let you share your unique vision and bring joy to others through your natural talents.'
         },
-        4: { 
+        4: {
           industries: ['Engineering', 'Construction', 'Finance', 'Manufacturing'],
           roles: [
             { name: 'Engineer', reason: 'Your methodical approach and precision make technical problem-solving natural' },
@@ -1357,7 +1357,7 @@ export async function registerRoutes(
           description: 'Your methodical approach builds lasting structures in any systematic field.',
           whyTheseFit: 'As a Life Path 4, you are the master builder who creates enduring value. These roles reward your dedication, precision, and ability to see projects through to completion.'
         },
-        5: { 
+        5: {
           industries: ['Travel', 'Sales', 'Journalism', 'Entertainment'],
           roles: [
             { name: 'Sales Rep', reason: 'Your adaptability and communication skills close deals naturally' },
@@ -1370,7 +1370,7 @@ export async function registerRoutes(
           description: 'Your adventurous spirit thrives in dynamic roles with variety and change.',
           whyTheseFit: 'As a Life Path 5, you need freedom and variety to feel alive. These roles offer the constant change and new experiences that fuel your adventurous spirit.'
         },
-        6: { 
+        6: {
           industries: ['Education', 'Healthcare', 'Hospitality', 'Social Work'],
           roles: [
             { name: 'Teacher', reason: 'Your nurturing nature creates supportive learning environments' },
@@ -1383,7 +1383,7 @@ export async function registerRoutes(
           description: 'Your caring nature excels in roles that serve and uplift others.',
           whyTheseFit: 'As a Life Path 6, you find deep fulfillment in caring for others and creating beauty. These roles let you make a tangible difference in people\'s lives.'
         },
-        7: { 
+        7: {
           industries: ['Research', 'Technology', 'Science', 'Academia', 'Spirituality'],
           roles: [
             { name: 'Researcher', reason: 'Your love of deep analysis uncovers truths others miss' },
@@ -1396,7 +1396,7 @@ export async function registerRoutes(
           description: 'Your analytical mind thrives in roles requiring deep thinking and expertise.',
           whyTheseFit: 'As a Life Path 7, you seek truth and deep understanding. These roles give you the space for contemplation and mastery that your inquisitive nature craves.'
         },
-        8: { 
+        8: {
           industries: ['Finance', 'Real Estate', 'Business', 'Law'],
           roles: [
             { name: 'Executive', reason: 'Your natural authority and ambition command respect at the highest levels' },
@@ -1409,7 +1409,7 @@ export async function registerRoutes(
           description: 'Your powerhouse energy excels in positions of authority and wealth creation.',
           whyTheseFit: 'As a Life Path 8, you are here to master the material world. These roles let you exercise your natural authority and build the abundance you\'re destined for.'
         },
-        9: { 
+        9: {
           industries: ['Non-profit', 'Arts', 'Healing', 'International Relations'],
           roles: [
             { name: 'Humanitarian', reason: 'Your compassion drives you to make the world a better place' },
@@ -1422,7 +1422,7 @@ export async function registerRoutes(
           description: 'Your humanitarian heart finds fulfillment in roles that serve the greater good.',
           whyTheseFit: 'As a Life Path 9, you are here to serve humanity and leave a meaningful legacy. These roles channel your wisdom and compassion toward making lasting change.'
         },
-        11: { 
+        11: {
           industries: ['Spirituality', 'Arts', 'Psychology', 'Media'],
           roles: [
             { name: 'Spiritual Teacher', reason: 'Your heightened intuition guides others on their spiritual journey' },
@@ -1435,7 +1435,7 @@ export async function registerRoutes(
           description: 'Your illuminating presence guides others through spiritual and creative work.',
           whyTheseFit: 'As a Master Number 11, you carry heightened spiritual awareness. These roles let you channel divine inspiration and illuminate the path for others.'
         },
-        22: { 
+        22: {
           industries: ['Architecture', 'Politics', 'Large Enterprises', 'Infrastructure'],
           roles: [
             { name: 'Architect', reason: 'Your vision for large-scale creation manifests in lasting structures' },
@@ -1448,7 +1448,7 @@ export async function registerRoutes(
           description: 'Your master builder energy creates lasting impact through large-scale projects.',
           whyTheseFit: 'As a Master Number 22, you have the rare ability to manifest grand visions. These roles let you build legacies that transform the world.'
         },
-        33: { 
+        33: {
           industries: ['Education', 'Healing', 'Spirituality', 'Community Service'],
           roles: [
             { name: 'Master Teacher', reason: 'Your wisdom and compassion uplift all who learn from you' },
@@ -1462,16 +1462,16 @@ export async function registerRoutes(
           whyTheseFit: 'As a Master Number 33, you carry the highest vibration of compassionate service. These roles let you heal and teach at the deepest level.'
         },
       };
-      
+
       const data = careerData[lifePathNumber] || careerData[9];
-      
+
       const lifePathMeanings: Record<number, string> = {
         1: 'The Pioneer', 2: 'The Diplomat', 3: 'The Communicator',
         4: 'The Builder', 5: 'The Freedom Seeker', 6: 'The Nurturer',
         7: 'The Seeker', 8: 'The Powerhouse', 9: 'The Humanitarian',
         11: 'The Illuminator', 22: 'The Master Builder', 33: 'The Master Teacher',
       };
-      
+
       res.json({
         lifePathNumber,
         title: lifePathMeanings[lifePathNumber],
@@ -1490,10 +1490,10 @@ export async function registerRoutes(
   // Diagnostic endpoint to check Whop API key and company info
   app.get("/api/whop/debug", requireWhopAuth, async (req: WhopRequest, res) => {
     console.log("[Whop Debug] Starting diagnostics...");
-    
+
     try {
       const { whopSdk } = await import("./whop");
-      
+
       const debugInfo: any = {
         apiKeyPresent: !!process.env.WHOP_API_KEY,
         apiKeyLength: process.env.WHOP_API_KEY?.length || 0,
@@ -1556,10 +1556,10 @@ export async function registerRoutes(
   app.post("/api/checkout/create", requireWhopAuth, async (req: WhopRequest, res) => {
     const whopUserId = req.whopUser?.userId;
     console.log(`[Whop Checkout] Starting checkout creation for user: ${whopUserId}`);
-    
+
     try {
       const { whopSdk } = await import("./whop");
-      
+
       if (!whopSdk) {
         console.error("[Whop Checkout] SDK not initialized - missing WHOP_API_KEY or WHOP_APP_ID");
         return res.status(500).json({ error: "Whop SDK not initialized" });
@@ -1570,7 +1570,7 @@ export async function registerRoutes(
       console.log(`[Whop Checkout] API Key present: ${!!process.env.WHOP_API_KEY}`);
       console.log(`[Whop Checkout] API Key length: ${process.env.WHOP_API_KEY?.length || 0}`);
       console.log(`[Whop Checkout] App ID: ${process.env.WHOP_APP_ID}`);
-      
+
       const checkoutConfiguration = await whopSdk.checkoutConfigurations.create({
         plan_id: planId,
       });
@@ -1602,7 +1602,7 @@ export async function registerRoutes(
       if (error?.status === 404) {
         console.error("[Whop Checkout] 404 Not Found - Plan ID may not exist or not accessible");
       }
-      res.status(error?.status || 500).json({ 
+      res.status(error?.status || 500).json({
         error: "Failed to create checkout configuration",
         details: error?.error?.message || error?.message
       });
@@ -1613,24 +1613,24 @@ export async function registerRoutes(
   app.post("/api/notify-upgrade-click", async (req: WhopRequest, res) => {
     try {
       const { userId, username, profilePictureUrl, odisId, fullName, email } = req.body;
-      
+
       const resendApiKey = process.env.RESEND_API_KEY;
       const notificationEmail = process.env.NOTIFICATION_EMAIL;
       const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
-      
+
       if (!resendApiKey || !notificationEmail) {
         console.error('[Notify] Missing RESEND_API_KEY or NOTIFICATION_EMAIL');
         return res.status(500).json({ error: 'Email notification not configured' });
       }
-      
+
       const resend = new Resend(resendApiKey);
-      
+
       const timestamp = new Date().toLocaleString('en-US', {
         timeZone: 'America/New_York',
         dateStyle: 'full',
         timeStyle: 'long'
       });
-      
+
       const emailHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #d4a33e; border-bottom: 2px solid #d4a33e; padding-bottom: 10px;">
@@ -1678,19 +1678,19 @@ export async function registerRoutes(
           </p>
         </div>
       `;
-      
+
       const { data, error } = await resend.emails.send({
         from: fromEmail,
         to: notificationEmail,
         subject: `GG33 Pro Upgrade Click - ${username || fullName || userId || 'Unknown User'}`,
         html: emailHtml,
       });
-      
+
       if (error) {
         console.error('[Notify] Resend error:', error);
         return res.status(500).json({ error: 'Failed to send notification email' });
       }
-      
+
       console.log('[Notify] Email sent successfully:', data?.id);
       res.json({ success: true, emailId: data?.id });
     } catch (error) {
@@ -1705,19 +1705,19 @@ export async function registerRoutes(
     try {
       const whopUserId = req.whopUser!.userId;
       const { receiptId } = req.body;
-      
+
       const { whopSdk } = await import("./whop");
-      
+
       if (!whopSdk) {
         return res.status(500).json({ error: "Whop SDK not initialized" });
       }
 
       const EXPECTED_PLAN_ID = "plan_rp2yShIBnW6LT";
       const WHOP_COMPANY_ID = process.env.WHOP_COMPANY_ID;
-      
+
       // Check if user already has an active membership for the Pro plan
       console.log(`[Whop] Checking membership status for user ${whopUserId}...`);
-      
+
       // Get company ID - try from environment variable first, then from app
       let companyId = WHOP_COMPANY_ID;
       if (!companyId) {
@@ -1729,15 +1729,15 @@ export async function registerRoutes(
           console.error(`[Whop] Could not get company from app:`, appError?.message);
         }
       }
-      
+
       if (!companyId) {
         console.error(`[Whop] No company ID available - set WHOP_COMPANY_ID environment variable`);
         return res.status(500).json({ error: "Whop company ID not configured" });
       }
-      
+
       let membershipId: string | null = null;
       let manageUrl: string | null = null;
-      
+
       try {
         // List all memberships for this user and find one matching our plan
         const memberships = await whopSdk.memberships.list({
@@ -1745,9 +1745,9 @@ export async function registerRoutes(
           user_ids: [whopUserId],
           plan_ids: [EXPECTED_PLAN_ID],
         });
-        
+
         console.log(`[Whop] Found ${memberships.data?.length || 0} memberships for user`);
-        
+
         // Find an active membership for our Pro plan
         const proMembership = memberships.data?.find((mem: any) => {
           const isOurPlan = mem.plan?.id === EXPECTED_PLAN_ID;
@@ -1755,25 +1755,25 @@ export async function registerRoutes(
           console.log(`[Whop] Membership ${mem.id}: plan=${mem.plan?.id}, status=${mem.status}, isOurPlan=${isOurPlan}, isActive=${isActive}`);
           return isOurPlan && isActive;
         });
-        
+
         if (proMembership) {
           membershipId = proMembership.id;
           manageUrl = proMembership.manage_url || null;
           console.log(`[Whop] Found active Pro membership: ${membershipId}, manage_url: ${manageUrl}`);
         } else {
           console.log(`[Whop] No active membership found for plan ${EXPECTED_PLAN_ID}`);
-          
+
           // If we have a receiptId, try to verify the payment directly as fallback
           if (receiptId) {
             console.log(`[Whop] Attempting to verify payment ${receiptId}...`);
             try {
               const payment = await whopSdk.payments.retrieve(receiptId);
-              
+
               if (payment && (payment as any).user_id === whopUserId && payment.status === 'paid') {
                 console.log(`[Whop] Payment verified, checking for membership creation...`);
                 // Payment is valid but membership might not be created yet
                 // This can happen with slight delays - let the user retry
-                return res.status(400).json({ 
+                return res.status(400).json({
                   error: "Payment verified but membership is still being created. Please wait a moment and try again.",
                   retry: true
                 });
@@ -1782,14 +1782,14 @@ export async function registerRoutes(
               console.error(`[Whop] Payment verification failed:`, paymentError?.message);
             }
           }
-          
+
           return res.status(400).json({ error: "No active Pro membership found. Please complete the purchase first." });
         }
       } catch (listError: any) {
         console.error("[Whop] Error listing memberships:", listError?.message);
         return res.status(500).json({ error: "Could not verify membership status" });
       }
-      
+
       const user = await storage.getUserByWhopId(whopUserId);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
@@ -1817,16 +1817,16 @@ export async function registerRoutes(
   app.get("/api/membership", requireWhopAuth, async (req: WhopRequest, res) => {
     try {
       const whopUserId = req.whopUser!.userId;
-      
+
       const { whopSdk } = await import("./whop");
-      
+
       if (!whopSdk) {
         return res.status(500).json({ error: "Whop SDK not initialized" });
       }
 
       const EXPECTED_PLAN_ID = "plan_rp2yShIBnW6LT";
       const WHOP_COMPANY_ID = process.env.WHOP_COMPANY_ID;
-      
+
       // Get company ID - try from environment variable first, then from app
       let companyId = WHOP_COMPANY_ID;
       if (!companyId) {
@@ -1837,37 +1837,37 @@ export async function registerRoutes(
           console.error(`[Whop] Could not get company from app:`, appError?.message);
         }
       }
-      
+
       if (!companyId) {
         return res.status(500).json({ error: "Whop company ID not configured" });
       }
-      
+
       try {
         console.log(`[Whop Membership] Checking for user ${whopUserId}, company ${companyId}, plan ${EXPECTED_PLAN_ID}`);
-        
+
         const memberships = await whopSdk.memberships.list({
           company_id: companyId,
           user_ids: [whopUserId],
           plan_ids: [EXPECTED_PLAN_ID],
         });
-        
+
         console.log(`[Whop Membership] Found ${memberships.data?.length || 0} memberships`);
-        
+
         // Find an active membership for our Pro plan
         const proMembership = memberships.data?.find((mem: any) => {
           const isActive = mem.status === 'active' || mem.status === 'trialing';
           console.log(`[Whop Membership] Membership ${mem.id}: status=${mem.status}, active=${isActive}, manage_url=${mem.manage_url ? 'yes' : 'no'}`);
           return isActive;
         });
-        
+
         // Set cache control headers to prevent stale membership data
         res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.set('Pragma', 'no-cache');
         res.set('Expires', '0');
-        
+
         if (proMembership) {
           console.log(`[Whop Membership] Active membership found: ${proMembership.id}, manage_url: ${proMembership.manage_url}`);
-          
+
           // Auto-sync: Upgrade user to Pro in database if they have active membership
           try {
             await storage.syncProStatus(whopUserId, true, proMembership.id);
@@ -1875,7 +1875,7 @@ export async function registerRoutes(
           } catch (syncError: any) {
             console.error(`[Whop Membership] Failed to sync Pro status:`, syncError?.message);
           }
-          
+
           res.json({
             hasMembership: true,
             membershipId: proMembership.id,
@@ -1886,7 +1886,7 @@ export async function registerRoutes(
           });
         } else {
           console.log(`[Whop Membership] No active membership found for user ${whopUserId}`);
-          
+
           // Auto-sync: Downgrade user from Pro in database if they don't have active membership
           try {
             await storage.syncProStatus(whopUserId, false, null);
@@ -1894,7 +1894,7 @@ export async function registerRoutes(
           } catch (syncError: any) {
             console.error(`[Whop Membership] Failed to sync Pro status:`, syncError?.message);
           }
-          
+
           res.json({
             hasMembership: false,
             membershipId: null,

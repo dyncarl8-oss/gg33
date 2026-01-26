@@ -5,44 +5,43 @@ import { GoogleGenAI } from "@google/genai";
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
 // Model configuration with fallback
-const PRIMARY_MODEL = "gemini-2.5-pro";
-const FALLBACK_MODEL = "gemini-flash-latest";
+// Model configuration with multi-level fallback
+const MODELS = [
+  "gemini-3-flash-preview",
+  "gemini-2.5-pro",
+  "gemini-flash-latest"
+];
+
+const PRIMARY_MODEL = MODELS[0];
 
 // Helper function to generate content with automatic fallback
+// Helper function to generate content with automatic multi-level fallback
 async function generateWithFallback(prompt: string): Promise<string> {
-  try {
-    console.log(`Attempting generation with ${PRIMARY_MODEL}...`);
-    const response = await ai.models.generateContent({
-      model: PRIMARY_MODEL,
-      contents: prompt,
-    });
-    
-    if (!response.text) {
-      throw new Error("Empty response from primary model");
-    }
-    
-    return response.text;
-  } catch (primaryError) {
-    console.warn(`Primary model (${PRIMARY_MODEL}) failed:`, primaryError);
-    console.log(`Falling back to ${FALLBACK_MODEL}...`);
-    
+  let lastError: any;
+
+  for (const model of MODELS) {
     try {
-      const fallbackResponse = await ai.models.generateContent({
-        model: FALLBACK_MODEL,
+      console.log(`Attempting generation with ${model}...`);
+      const response = await ai.models.generateContent({
+        model: model,
         contents: prompt,
       });
-      
-      if (!fallbackResponse.text) {
-        throw new Error("Empty response from fallback model");
+
+      if (!response.text) {
+        throw new Error(`Empty response from model ${model}`);
       }
-      
-      console.log(`Successfully generated with fallback model ${FALLBACK_MODEL}`);
-      return fallbackResponse.text;
-    } catch (fallbackError) {
-      console.error(`Fallback model (${FALLBACK_MODEL}) also failed:`, fallbackError);
-      throw fallbackError;
+
+      console.log(`Successfully generated with model ${model}`);
+      return response.text;
+    } catch (error) {
+      console.warn(`Model ${model} failed:`, error);
+      lastError = error;
+      // Continue to next model in the list
     }
   }
+
+  console.error("All models failed for content generation.");
+  throw lastError || new Error("All models failed");
 }
 
 // Helper function to clean JSON response from Gemini
@@ -86,6 +85,7 @@ export interface PersonalityInsightResponse {
 
 export interface DailyEnergyResponse {
   theme: string;
+  energyScore: number;
   description: string;
   dos: string[];
   donts: string[];
@@ -136,7 +136,7 @@ You MUST respond with valid JSON only, no other text. Use this exact format:
   try {
     const rawText = await generateWithFallback(prompt);
     console.log("Gemini personality response:", rawText);
-    
+
     const cleanJson = cleanJsonResponse(rawText);
     return JSON.parse(cleanJson);
   } catch (error) {
@@ -223,7 +223,7 @@ You MUST respond with valid JSON only, no other text. Use this exact format:
   try {
     const rawText = await generateWithFallback(prompt);
     console.log("Gemini compatibility response:", rawText);
-    
+
     const cleanJson = cleanJsonResponse(rawText);
     return JSON.parse(cleanJson);
   } catch (error) {
@@ -245,9 +245,10 @@ export async function generateDailyEnergy(
   universalDayNumber: number,
   todayDate: string
 ): Promise<DailyEnergyResponse> {
-  const prompt = `You are a gifted intuitive guide providing personalized daily guidance. Create a warm, personal daily energy reading that speaks directly to the person.
+  const prompt = `You are a professional intuitive guide and master numerologist. Your goal is to provide a "Perfect Daily Energy" reading that is technically honest and deeply personal.
 
-Hidden Profile Data (use this to inform your reading, but DO NOT mention these numbers or signs explicitly):
+HIDDEN PROFILE DATA:
+- Name: ${profile.name}
 - Life Path Number: ${profile.lifePathNumber}
 - Expression Number: ${profile.expressionNumber}
 - Soul Urge Number: ${profile.soulUrgeNumber}
@@ -257,35 +258,38 @@ Hidden Profile Data (use this to inform your reading, but DO NOT mention these n
 - Universal Day Number: ${universalDayNumber}
 - Today's Date: ${todayDate}
 
-CRITICAL STYLE REQUIREMENTS:
-1. Write in SECOND PERSON - use "You" and "Your" (NOT the person's name)
-2. DO NOT mention any numbers (like "Personal Day 4" or "Life Path 11")
-3. DO NOT mention zodiac signs
-4. Simply DESCRIBE what today's energy feels like for them naturally
-5. Be warm, encouraging, and make them feel guided
-6. Focus on the ENERGY and FEELING of the day, not technical details
+CRITICAL INSTRUCTIONS:
+1. CALCULATE ALIGNMENT: Mentally evaluate the collision between the user's Life Path (${profile.lifePathNumber}) and today's Personal Day (${personalDayNumber}). 
+   - High Alignment (80-100): Numbers are harmonious (e.g., 1 & 1, 3 & 5, 2 & 6, or master numbers).
+   - Moderate (40-79): Neutral or standard daily flow.
+   - Low Alignment (0-39): Numbers clash or represent friction (e.g., 1 & 4, 5 & 8, or intense karmic cycles).
 
-CRITICAL FORMAT REQUIREMENTS:
-- "dos" MUST be exactly 3 items, each 2-3 words ONLY (e.g., "Take initiative", "Trust instincts")
-- "donts" MUST be exactly 3 items, each 2-3 words ONLY (e.g., "Rush decisions", "Overcommit")
-- "theme" MUST be 2-3 words only
-- "focusArea" MUST be 2-4 words only
-- DO NOT use full sentences for dos, donts, theme, or focusArea
+2. BE TECHNICALLY HONEST: If it's a "bad" or high-friction day, give a low score (e.g., 15-30) and use a protective/cautious tone. Do not fake positivity. If it's a peak power day, use an authoritative, high-energy tone.
 
-You MUST respond with valid JSON only, no other text. Use this exact format:
+3. PERSONALIZED INSIGHT (The "Why"): In the description, explicitly mention WHY today feels this way by referencing the interaction between their numbers. Use second person ("You", "Your").
+
+STYLE REQUIREMENTS:
+- Write in SECOND PERSON.
+- DO NOT mention technical astrology terms like "houses" or "trines".
+- DO focus on the interaction of their Life Path and the Day energy.
+- "dos" and "donts" MUST be exactly 3 items each, 2-3 words max.
+- "theme" MUST be 2-3 words only (e.g., "The Strategic Shift").
+
+You MUST respond with valid JSON only. Use this exact format:
 {
-  "theme": "Creative Flow",
-  "description": "A personalized 2 sentence description using 'You' and 'Your'. Describe what today's energy feels like for them. No numbers or signs.",
-  "dos": ["Take initiative", "Trust instincts", "Connect deeply"],
-  "donts": ["Rush decisions", "Overcommit", "Ignore rest"],
-  "focusArea": "Personal creativity",
-  "affirmation": "A personalized affirmation using 'You' or 'I am'. No numbers or signs."
+  "theme": "The Strategic Shift",
+  "energyScore": 88,
+  "description": "Your Life Path ${profile.lifePathNumber} is intersecting with today's Personal Day ${personalDayNumber} energy. This creates a specific [Insight Type]—where your [Trait] finally aligns with [Day Energy]. Explain the specific if/then logic for today.",
+  "dos": ["Sign contracts", "Speak up", "Trust logic"],
+  "donts": ["Over-analyze", "Seek advice", "Postpone starts"],
+  "focusArea": "Project launches",
+  "affirmation": "I am aligned with my true purpose and act with precision."
 }`;
 
   try {
     const rawText = await generateWithFallback(prompt);
     console.log("Gemini daily energy response:", rawText);
-    
+
     const cleanJson = cleanJsonResponse(rawText);
     return JSON.parse(cleanJson);
   } catch (error) {
@@ -327,14 +331,14 @@ function calculateLifePathNumber(birthDate: Date): number {
   const month = birthDate.getMonth() + 1;
   const day = birthDate.getDate();
   const year = birthDate.getFullYear();
-  
+
   const monthReduced = reduceToSingleDigit(month, true);
   const dayReduced = reduceToSingleDigit(day, true);
   const yearReduced = reduceToSingleDigit(
     year.toString().split('').reduce((sum, d) => sum + parseInt(d), 0),
     true
   );
-  
+
   const total = monthReduced + dayReduced + yearReduced;
   return reduceToSingleDigit(total, true);
 }
@@ -376,10 +380,10 @@ function calculatePersonalDayNumber(birthDate: Date): number {
   const month = today.getMonth() + 1;
   const day = today.getDate();
   const year = today.getFullYear();
-  
+
   const lifePathNumber = calculateLifePathNumber(birthDate);
   const universalDayNumber = reduceToSingleDigit(month + day + reduceToSingleDigit(year.toString().split('').reduce((sum, d) => sum + parseInt(d), 0), false), false);
-  
+
   return reduceToSingleDigit(lifePathNumber + universalDayNumber, true);
 }
 
@@ -388,7 +392,7 @@ function calculateUniversalDayNumber(): number {
   const month = today.getMonth() + 1;
   const day = today.getDate();
   const year = today.getFullYear();
-  
+
   const yearSum = year.toString().split('').reduce((sum, d) => sum + parseInt(d), 0);
   return reduceToSingleDigit(month + day + yearSum, true);
 }
@@ -396,7 +400,7 @@ function calculateUniversalDayNumber(): number {
 function getWesternZodiac(birthDate: Date): { sign: string; element: string } {
   const month = birthDate.getMonth() + 1;
   const day = birthDate.getDate();
-  
+
   const zodiacData: Array<{ sign: string; element: string; startMonth: number; startDay: number; endMonth: number; endDay: number }> = [
     { sign: 'Capricorn', element: 'Earth', startMonth: 12, startDay: 22, endMonth: 1, endDay: 19 },
     { sign: 'Aquarius', element: 'Air', startMonth: 1, startDay: 20, endMonth: 2, endDay: 18 },
@@ -411,7 +415,7 @@ function getWesternZodiac(birthDate: Date): { sign: string; element: string } {
     { sign: 'Scorpio', element: 'Water', startMonth: 10, startDay: 23, endMonth: 11, endDay: 21 },
     { sign: 'Sagittarius', element: 'Fire', startMonth: 11, startDay: 22, endMonth: 12, endDay: 21 },
   ];
-  
+
   for (const z of zodiacData) {
     if (z.startMonth === 12 && z.endMonth === 1) {
       if ((month === 12 && day >= z.startDay) || (month === 1 && day <= z.endDay)) {
@@ -421,7 +425,7 @@ function getWesternZodiac(birthDate: Date): { sign: string; element: string } {
       return { sign: z.sign, element: z.element };
     }
   }
-  
+
   return { sign: 'Unknown', element: 'Unknown' };
 }
 
@@ -429,10 +433,10 @@ function getChineseZodiac(birthDate: Date): { animal: string; element: string } 
   const year = birthDate.getFullYear();
   const animals = ['Rat', 'Ox', 'Tiger', 'Rabbit', 'Dragon', 'Snake', 'Horse', 'Goat', 'Monkey', 'Rooster', 'Dog', 'Pig'];
   const elements = ['Metal', 'Metal', 'Water', 'Water', 'Wood', 'Wood', 'Fire', 'Fire', 'Earth', 'Earth'];
-  
+
   const animalIndex = (year - 4) % 12;
   const elementIndex = year % 10;
-  
+
   return {
     animal: animals[animalIndex],
     element: elements[elementIndex]
@@ -442,7 +446,7 @@ function getChineseZodiac(birthDate: Date): { animal: string; element: string } 
 function calculateEnergySignature(birthDate: Date): string {
   const lifePathNumber = calculateLifePathNumber(birthDate);
   const { element } = getChineseZodiac(birthDate);
-  
+
   const energyMap: Record<number, string> = {
     1: 'Fire Initiator',
     2: 'Water Harmonizer',
@@ -457,7 +461,7 @@ function calculateEnergySignature(birthDate: Date): string {
     22: 'Reality Architect',
     33: 'Love Teacher',
   };
-  
+
   return `${element} ${energyMap[lifePathNumber] || 'Energy'}`;
 }
 
@@ -478,12 +482,14 @@ export interface ChatResponse {
 }
 
 // Chat model - using pro for quality
-const CHAT_MODEL = "gemini-2.5-pro";
+// Chat model constant is now primarily just for logging or explicit reference
+// But we use the MODELS array for actual generation with fallback
+const CHAT_MODEL = PRIMARY_MODEL;
 
 // Build user context once - this is the expensive calculation that should only happen once per session
 export function buildUserContext(profile: ChatUserProfile): { systemContext: string; firstName: string } {
   const birthDate = new Date(profile.birthDate);
-  
+
   // Calculate all numerology numbers
   const lifePathNumber = calculateLifePathNumber(birthDate);
   const expressionNumber = calculateExpressionNumber(profile.fullName);
@@ -493,11 +499,11 @@ export function buildUserContext(profile: ChatUserProfile): { systemContext: str
   const dayOfBirthNumber = calculateDayOfBirthNumber(birthDate);
   const personalDayNumber = calculatePersonalDayNumber(birthDate);
   const universalDayNumber = calculateUniversalDayNumber();
-  
+
   // Get astrology data
   const westernZodiac = getWesternZodiac(birthDate);
   const chineseZodiac = getChineseZodiac(birthDate);
-  
+
   // Format today's date
   const today = new Date();
   const todayFormatted = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
@@ -574,22 +580,29 @@ export async function generateChatResponse(
   conversationHistory: ChatMessage[]
 ): Promise<ChatResponse> {
   const prompt = buildChatPrompt(userMessage, profile, conversationHistory);
+  let lastError: any;
 
-  try {
-    console.log(`Chat: Using fast model ${CHAT_MODEL}...`);
-    const response = await ai.models.generateContent({
-      model: CHAT_MODEL,
-      contents: prompt,
-    });
-    
-    const rawText = response.text || "";
-    console.log("Gemini chat response:", rawText);
-    
-    return { message: rawText.trim() };
-  } catch (error) {
-    console.error("Error generating chat response:", error);
-    throw error;
+  for (const model of MODELS) {
+    try {
+      console.log(`Chat: Attempting with model ${model}...`);
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: prompt,
+      });
+
+      const rawText = response.text || "";
+      if (rawText) {
+        console.log(`Gemini chat response successfully generated with ${model}`);
+        return { message: rawText.trim() };
+      }
+      throw new Error(`Empty text from model ${model}`);
+    } catch (error) {
+      console.error(`Error generating chat response with ${model}:`, error);
+      lastError = error;
+    }
   }
+
+  throw lastError || new Error("All models failed for chat response");
 }
 
 // Session-based chat - uses pre-computed context (more efficient)
@@ -600,22 +613,29 @@ export async function generateChatResponseWithContext(
   conversationHistory: ChatMessage[]
 ): Promise<ChatResponse> {
   const prompt = buildChatPromptWithContext(userMessage, systemContext, firstName, conversationHistory);
+  let lastError: any;
 
-  try {
-    console.log(`Chat (session): Using fast model ${CHAT_MODEL}...`);
-    const response = await ai.models.generateContent({
-      model: CHAT_MODEL,
-      contents: prompt,
-    });
-    
-    const rawText = response.text || "";
-    console.log("Gemini chat response:", rawText);
-    
-    return { message: rawText.trim() };
-  } catch (error) {
-    console.error("Error generating chat response:", error);
-    throw error;
+  for (const model of MODELS) {
+    try {
+      console.log(`Chat (session): Attempting with model ${model}...`);
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: prompt,
+      });
+
+      const rawText = response.text || "";
+      if (rawText) {
+        console.log(`Gemini chat response (session) successfully generated with ${model}`);
+        return { message: rawText.trim() };
+      }
+      throw new Error(`Empty text from model ${model}`);
+    } catch (error) {
+      console.error(`Error generating chat response (session) with ${model}:`, error);
+      lastError = error;
+    }
   }
+
+  throw lastError || new Error("All models failed for session chat response");
 }
 
 export async function* generateChatResponseStream(
@@ -624,21 +644,34 @@ export async function* generateChatResponseStream(
   conversationHistory: ChatMessage[]
 ): AsyncGenerator<string> {
   const prompt = buildChatPrompt(userMessage, profile, conversationHistory);
+  let lastError: any;
 
-  try {
-    console.log(`Chat stream: Using fast model ${CHAT_MODEL}...`);
-    const response = await ai.models.generateContentStream({
-      model: CHAT_MODEL,
-      contents: prompt,
-    });
-    
-    for await (const chunk of response) {
-      if (chunk.text) {
-        yield chunk.text;
+  for (const model of MODELS) {
+    try {
+      console.log(`Chat stream: Attempting with model ${model}...`);
+      const response = await ai.models.generateContentStream({
+        model: model,
+        contents: prompt,
+      });
+
+      let hasData = false;
+      for await (const chunk of response) {
+        if (chunk.text) {
+          hasData = true;
+          yield chunk.text;
+        }
       }
+
+      if (hasData) {
+        console.log(`Successfully streamed response with model ${model}`);
+        return; // Success, stop trying other models
+      }
+      throw new Error(`No data streamed from model ${model}`);
+    } catch (error) {
+      console.error(`Error generating chat stream with ${model}:`, error);
+      lastError = error;
     }
-  } catch (error) {
-    console.error("Error generating chat stream:", error);
-    throw error;
   }
+
+  throw lastError || new Error("All models failed for chat stream");
 }
