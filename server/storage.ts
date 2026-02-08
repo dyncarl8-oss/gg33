@@ -16,11 +16,11 @@ export interface IStorage {
   upgradeUserToPro(whopUserId: string, receiptId: string): Promise<DBUser | null>;
   syncProStatus(whopUserId: string, isPro: boolean, membershipId?: string | null): Promise<DBUser | null>;
   getUserByPaymentReceipt(receiptId: string): Promise<DBUser | null>;
-  
+
   // Daily Energy operations
   getDailyEnergy(odisId: string, date: string): Promise<DBDailyEnergy | null>;
   saveDailyEnergy(data: Omit<DBDailyEnergy, 'id' | 'createdAt'>): Promise<DBDailyEnergy>;
-  
+
   // Personality Insight operations
   getPersonalityInsight(odisId: string): Promise<DBPersonalityInsight | null>;
   savePersonalityInsight(data: Omit<DBPersonalityInsight, 'id' | 'createdAt' | 'updatedAt'>): Promise<DBPersonalityInsight>;
@@ -163,7 +163,7 @@ export class MongoStorage implements IStorage {
       if (data.birthTime !== undefined) {
         updateFields.birthTime = data.birthTime;
       }
-      
+
       const user = await UserModel.findOneAndUpdate(
         { odisId },
         { $set: updateFields },
@@ -278,11 +278,11 @@ export class MongoStorage implements IStorage {
     }
 
     try {
-      const updateData: any = { 
-        isPro, 
-        updatedAt: new Date() 
+      const updateData: any = {
+        isPro,
+        updatedAt: new Date()
       };
-      
+
       if (membershipId !== undefined) {
         updateData.proPaymentReceiptId = membershipId;
       }

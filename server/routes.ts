@@ -908,10 +908,29 @@ export async function registerRoutes(
 
       const todayMeaning = lifePathMeanings[universalDay] || { title: 'Universal Energy', theme: 'Balanced vibrations' };
 
+      // Add personal takeaway if lifePathNumber is provided
+      const userLifePath = _req.query.lp ? parseInt(_req.query.lp as string) : null;
+      let personalTakeaway = "";
+
+      if (userLifePath) {
+        if (universalDay === userLifePath) {
+          personalTakeaway = `Today is a double-vibration day for you! With both the Universe and your Life Path resonating on ${universalDay}, your natural gifts are exponentially amplified. It's a "Mirror Day" where your internal soul mission perfectly aligns with the external cosmic flow. A massive opportunity for breakthrough is at your doorstep.`;
+        } else if ([1, 5, 7].includes(universalDay) && [1, 5, 7].includes(userLifePath)) {
+          personalTakeaway = `Today's Universal ${universalDay} energy blends harmoniously with your Life Path ${userLifePath}. Both share a vibration of independent seeking and intellectual growth. The universe is speaking your language today—use this fluid energy to make significant progress on your personal research or solo ventures.`;
+        } else if ([2, 4, 8].includes(universalDay) && [2, 4, 8].includes(userLifePath)) {
+          personalTakeaway = `Today is a day for building and manifesting. The Universal ${universalDay} provides a solid foundation that matches your inherent Life Path ${userLifePath} drive for structure and success. It's an excellent day for material decisions, contracts, and long-term planning.`;
+        } else if ([3, 6, 9].includes(universalDay) && [3, 6, 9].includes(userLifePath)) {
+          personalTakeaway = `Emotion and creativity are the themes today. Your Life Path ${userLifePath} is uniquely supported by the Universal ${universalDay}'s focus on expression and humanitarian service. Open your heart and share your vision—the world is ready to receive your light.`;
+        } else {
+          personalTakeaway = `Today's Universal ${universalDay} energy offers a complementary lesson to your Life Path ${userLifePath}. While you naturally lean towards one mode of being, the universe is inviting you to experiment with a different perspective today. Embrace this "growth stretch" to become a more balanced version of yourself.`;
+        }
+      }
+
       res.json({
         universalDay,
         todayTheme: todayMeaning.theme,
         todayTitle: todayMeaning.title,
+        personalTakeaway,
         date: today.toISOString().split('T')[0],
         topLifePaths: sortedLifePaths.map(lp => ({
           ...lp,
@@ -969,21 +988,83 @@ export async function registerRoutes(
         rating: 'excellent' | 'good' | 'neutral' | 'challenging';
         theme: string;
         activities: string[];
+        why: string;
+        description: string;
       }> = [];
 
-      const personalDayThemes: Record<number, { theme: string; activities: string[] }> = {
-        1: { theme: 'New Beginnings', activities: ['Start projects', 'Take initiative', 'Lead meetings'] },
-        2: { theme: 'Cooperation', activities: ['Partnerships', 'Negotiations', 'Relationship talks'] },
-        3: { theme: 'Creativity', activities: ['Brainstorming', 'Social events', 'Creative work'] },
-        4: { theme: 'Building', activities: ['Planning', 'Organization', 'Detail work'] },
-        5: { theme: 'Change', activities: ['Travel', 'New experiences', 'Networking'] },
-        6: { theme: 'Nurturing', activities: ['Family time', 'Home projects', 'Self-care'] },
-        7: { theme: 'Reflection', activities: ['Research', 'Study', 'Meditation'] },
-        8: { theme: 'Achievement', activities: ['Business deals', 'Financial decisions', 'Career moves'] },
-        9: { theme: 'Completion', activities: ['Finishing projects', 'Giving back', 'Letting go'] },
-        11: { theme: 'Inspiration', activities: ['Spiritual practice', 'Teaching', 'Visionary work'] },
-        22: { theme: 'Manifestation', activities: ['Big projects', 'Long-term planning', 'Building legacy'] },
-        33: { theme: 'Healing', activities: ['Helping others', 'Counseling', 'Community service'] },
+      const personalDayThemes: Record<number, { theme: string; activities: string[]; why: string; description: string }> = {
+        1: {
+          theme: 'New Beginnings & Assertive Leadership',
+          activities: ['Launch a new project', 'Sign a fresh contract', 'Initiate difficult conversations', 'Define your personal vision'],
+          why: 'The 1 energy is the spark of initiation. When your personal day aligns with this vibration, the universe supports independent action and pioneering efforts. It is a day where your individual will is amplified, making it the perfect time to break ground on something that requires pure focus and self-reliance.',
+          description: 'A day of high energy and fresh starts. You are being pushed to step out of your comfort zone and take the lead. The shadows of today involve impatience or excessive ego—stay focused on constructive leadership rather than just being "first."'
+        },
+        2: {
+          theme: 'Partnership, Diplomacy & Intuition',
+          activities: ['Collaborate in a team', 'Go on a meaningful date', 'Listen more than you speak', 'Meditate on delicate decisions'],
+          why: 'The 2 vibration is about the "other." In your personal cycle, this day is designed to test and refine your ability to cooperate and harmonize. It is a day where the "I" takes a backseat to the "We," allowing you to pick up on subtle emotional cues that you might otherwise miss.',
+          description: 'A day for sensitivity and detail. You may find yourself more emotional or receptive today. This is not a time for forceful action, but for gentle persuasion and finding the middle ground. Trust your gut feelings; they are heightened now.'
+        },
+        3: {
+          theme: 'Creative Expression & Social Joy',
+          activities: ['Write or create art', 'Attend a social gathering', 'Public speaking or pitching', 'Engage in playful activities'],
+          why: 'The 3 energy is the child of the 1 and 2—it is the manifestation of creative joy. This day supports self-expression in all its forms. The universe is practically begging you to share your light, your words, and your unique perspective with the world.',
+          description: 'A vibrant day where your charisma is at its peak. Use this energy to inspire others and spread optimism. Watch out for scattered focus or being overly critical of yourself—let the creativity flow without the need for immediate perfection.'
+        },
+        4: {
+          theme: 'Structure, Foundation & Hard Work',
+          activities: ['Organize your workspace', 'Finalize a long-term plan', 'Handle administrative tasks', 'Focus on physical health habits'],
+          why: 'The 4 vibration is the "square"—it represents stability and the physical realm. This day is your reality check. It provides the disciplined energy needed to turn abstract ideas into concrete results. Without 4 days, our dreams have no place to land.',
+          description: 'A day of focused effort and practicality. You might feel a bit restricted or tired under this heavy vibration, but the progress you make today builds the walls of your future success. Embrace the routine and find satisfaction in a job well done.'
+        },
+        5: {
+          theme: 'Adventure, Change & Dynamic Freedom',
+          activities: ['Travel or change your environment', 'Network with new people', 'Pivot a stale strategy', 'Explore a new hobby or field'],
+          why: 'The 5 energy is the midpoint of the cycle—it is the vibration of movement and non-conformity. This day is meant to break you out of any ruts you have fallen into. It supports quick thinking and the ability to adapt to sudden opportunities.',
+          description: 'An unpredictable and fast-paced day. You may feel a restless urge to wander or try something radical. Say "yes" to the unexpected, but remain grounded enough not to burn bridges in your pursuit of excitement.'
+        },
+        6: {
+          theme: 'Nurturing Harmony & Responsibility',
+          activities: ['Host a family dinner', 'Volunteer or help a friend', 'Beautify your home', 'Heal a fractured relationship'],
+          why: 'The 6 vibration is the heart of the numerological cycle. It focuses on duty, family, and service. This day is a reminder of your connections to others. The universe asks you to step into the role of the "nurturer," providing comfort and stability to those you care about.',
+          description: 'A day where you feel most satisfied when serving a higher cause or taking care of your loved ones. You are the pillar today. Avoid the trap of over-sacrificing your own needs or becoming overly controlling in your domestic sphere.'
+        },
+        7: {
+          theme: 'Deep Introspection & Spiritual Insight',
+          activities: ['Spend time in silence', 'Read a deep philosophical text', 'Research a complex topic', 'Practice advanced meditation'],
+          why: 'The 7 vibration is the seeker of truth. It pulls the energy inward, away from the noise of the material world. This day is designed for your soul to catch up with your life. It is the best time for mental breakthroughs and connecting with your higher self.',
+          description: 'A quiet, contemplative day. You may feel more withdrawn or serious than usual—this is normal. Do not force social interactions; instead, honor your need for solitude. The insights you gain today will be your roadmap for the next stage of your journey.'
+        },
+        8: {
+          theme: 'Power, Achievement & Material Mastery',
+          activities: ['Make a major financial move', 'Negotiate from a position of power', 'Delegating tasks to a team', 'Visualizing long-term wealth'],
+          why: 'The 8 energy is the number of karmic balance and material success. It is the most powerful vibration for dealing with money, career, and authority. On this day, your ability to manifest in the physical world is at its peak—if you have put in the work, the rewards arrive.',
+          description: 'A high-stakes day of ambition and drive. You are being asked to step into your full power. The 8 demands integrity; as long as you act with honor, the success you achieve today will be long-lasting. Avoid being ruthless or overly focused on status.'
+        },
+        9: {
+          theme: 'Humanitarian Wisdom & Conscious Completion',
+          activities: ['Finish a long-standing project', 'Donate to a cause', 'Forgive someone from your past', 'Mentor someone younger'],
+          why: 'The 9 vibration represents the end of a cycle and the wisdom gained from it. This day is about the "Big Picture" and universal love. It is the time to tie up loose ends and release what no longer serves you, clearing the psychic space for the next cycle to begin.',
+          description: 'A day of deep compassion and global perspective. You may feel a bit detached from personal drama as you focus on the greater good. This is a day for closure and "letting go" with grace. Do not start major new ventures today; instead, polish what is finished.'
+        },
+        11: {
+          theme: 'Illumination & Visionary Inspiration',
+          activities: ['Journal your intuitive flashes', 'Teach or share a high-level concept', 'Engage in visionary brainstorming', 'Practice energy healing'],
+          why: 'The Master Number 11 is a "portal" vibration. It brings a heightened level of spiritual awareness and psychic sensitivity. On this day, the veil between your conscious mind and your higher intuition is thin—you are a lightning rod for divine inspiration.',
+          description: 'An intense, high-vibration day. You may feel nervous energy or a sense of "knowing" without knowing how. This is a day to inspire others through your presence. Stay grounded to avoid burnout from the electrical energy of this number.'
+        },
+        22: {
+          theme: 'The Master Builder & Global Manifestation',
+          activities: ['Working on a project with global scale', 'Philanthropy on a large level', 'Masterminding a massive system', 'Designing sustainable solutions'],
+          why: 'The Master Number 22 takes the vision of the 11 and anchors it into the physical world. This is arguably the most powerful day for manifestation in the entire numerology system. It is about building something that will outlast your own lifetime.',
+          description: 'A day of enormous potential and equally enormous responsibility. You are not just working for yourself today; you are building for humanity. Focus on the grandest version of your dreams and trust that you have the practical tools to make them real.'
+        },
+        33: {
+          theme: 'Selfless Service & The Master Teacher',
+          activities: ['Providing deep emotional healing to others', 'Counseling someone through a crisis', 'Acting as a pure channel for love', 'Teaching wisdom through example'],
+          why: 'The Master Number 33 is the vibration of the "Cosmic Parent." It is rare and incredibly potent. This day is about unconditional love and the absolute sacrifice of the ego for the benefit of others. It represents the highest achievement of the human heart.',
+          description: 'A day of profound emotional depth and healing capability. You are the "Master Teacher" today. People will be naturally drawn to your light for guidance. Your only task is to remain a humble vessel for compassion and truth.'
+        },
       };
 
       for (let day = 1; day <= daysInMonth; day++) {
@@ -1019,6 +1100,8 @@ export async function registerRoutes(
           rating,
           theme: dayInfo.theme,
           activities: dayInfo.activities,
+          why: (dayInfo as any).why,
+          description: (dayInfo as any).description,
         });
       }
 

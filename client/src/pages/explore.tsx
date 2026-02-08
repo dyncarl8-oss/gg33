@@ -12,7 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Link } from 'wouter';
 import { calculateComprehensiveProfile } from '@/lib/numerology';
 
-const ODIS_ID_KEY = 'gg33-odis-id';
+const ODIS_ID_KEY = 'gg33-odis-id'; import { calculateLifePathNumber } from "@/lib/numerology";
 
 type FeatureType = 'trending' | 'best-days' | 'celebrity' | 'travel' | 'relationship' | 'career' | null;
 
@@ -89,9 +89,19 @@ function LoadingSkeleton() {
   );
 }
 
-function TrendingEnergiesDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+function TrendingEnergiesDialog({ open, onClose, profileData }: { open: boolean; onClose: () => void; profileData: ProfileData | null }) {
+  const birthDate = profileData?.birthDate ? new Date(profileData.birthDate) : null;
+  const lifePath = birthDate ? calculateLifePathNumber(birthDate) : null;
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ['/api/explore/trending-energies'],
+    queryKey: ['/api/explore/trending-energies', lifePath],
+    queryFn: async () => {
+      const url = new URL('/api/explore/trending-energies', window.location.origin);
+      if (lifePath) url.searchParams.append('lp', lifePath.toString());
+      const res = await fetch(url.toString());
+      if (!res.ok) throw new Error('Failed to load');
+      return res.json();
+    },
     enabled: open,
   });
 
@@ -105,7 +115,7 @@ function TrendingEnergiesDialog({ open, onClose }: { open: boolean; onClose: () 
           </DialogTitle>
           <DialogDescription>What energy patterns are most active today</DialogDescription>
         </DialogHeader>
-        
+
         <ScrollArea className="max-h-[60vh] pr-4">
           {isLoading ? (
             <LoadingSkeleton />
@@ -114,74 +124,94 @@ function TrendingEnergiesDialog({ open, onClose }: { open: boolean; onClose: () 
               <AlertCircle className="w-4 h-4" />
               Failed to load trending energies
             </div>
-          ) : data ? (
-            <div className="space-y-6" data-testid="content-trending">
-              <div className="text-center p-4 bg-amber-a2 rounded-lg border border-amber-a4">
-                <div className="text-sm text-gray-11 mb-1">Universal Day Number</div>
-                <div className="text-4xl font-bold text-amber-9" data-testid="text-universal-day">{data.universalDay}</div>
-                <div className="text-lg font-medium mt-1" data-testid="text-day-title">{data.todayTitle}</div>
-                <div className="text-sm text-gray-11" data-testid="text-day-theme">{data.todayTheme}</div>
-                <div className="text-xs text-gray-10 mt-2">{data.date}</div>
-              </div>
-
-              <div>
-                <h3 className="font-medium mb-3 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-amber-9" />
-                  Top Life Paths in Database
-                </h3>
-                <div className="grid gap-2">
-                  {data.topLifePaths?.map((lp: { number: number; count: number; title: string; theme: string }, i: number) => (
-                    <div key={lp.number} className="flex items-center justify-between p-3 bg-gray-a2 rounded-lg" data-testid={`card-lifepath-${lp.number}`}>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-amber-a3 flex items-center justify-center font-bold text-amber-9">
-                          {lp.number}
-                        </div>
-                        <div>
-                          <div className="font-medium">{lp.title}</div>
-                          <div className="text-xs text-gray-11">{lp.theme}</div>
-                        </div>
-                      </div>
-                      <Badge variant="secondary" size="sm">{lp.count.toLocaleString()} entities</Badge>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h3 className="font-medium mb-3 flex items-center gap-2">
-                  <Compass className="w-4 h-4 text-amber-9" />
-                  Top Elements
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {data.topElements?.map((el: { element: string; count: number }) => (
-                    <Badge key={el.element} variant="outline" data-testid={`badge-element-${el.element}`}>
-                      {el.element}: {el.count.toLocaleString()}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              {data.representativeCues?.length > 0 && (
-                <div>
-                  <h3 className="font-medium mb-3 flex items-center gap-2">
-                    <Star className="w-4 h-4 text-amber-9" />
-                    Today's Energy Representatives
-                  </h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {data.representativeCues?.map((cue: { id: number; name: string; type: string; energySignature: string }) => (
-                      <div key={cue.id} className="p-2 bg-gray-a2 rounded-lg" data-testid={`card-cue-${cue.id}`}>
-                        <div className="font-medium text-sm truncate">{cue.name}</div>
-                        <div className="text-xs text-gray-11">{cue.type}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+            Failed to load trending energies
+        </div>
+        ) : data ? (
+        <div className="space-y-6" data-testid="content-trending">
+          <div className="flex flex-col gap-4 p-5 bg-amber-a2 rounded-xl border-2 border-amber-a4 shadow-inner">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-bold text-amber-11 uppercase tracking-widest">Universal Day Number</div>
+              <div className="text-xs text-gray-10 font-mono">{data.date}</div>
             </div>
+            <div className="flex items-center gap-6">
+              <div className="text-6xl font-black text-amber-9 drop-shadow-sm" data-testid="text-universal-day">{data.universalDay}</div>
+              <div className="flex-1">
+                <div className="text-xl font-bold text-gray-12" data-testid="text-day-title">{data.todayTitle}</div>
+                <div className="text-md text-amber-11 font-medium italic" data-testid="text-day-theme">{data.todayTheme}</div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-medium mb-3 flex items-center gap-2">
+              <Users className="w-4 h-4 text-amber-9" />
+              Top Life Paths in Database
+            </h3>
+            <div className="grid gap-2">
+              {data.topLifePaths?.map((lp: { number: number; count: number; title: string; theme: string }, i: number) => (
+                <div key={lp.number} className="flex items-center justify-between p-3 bg-gray-a2 rounded-lg" data-testid={`card-lifepath-${lp.number}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-amber-a3 flex items-center justify-center font-bold text-amber-9">
+                      {lp.number}
+                    </div>
+                    <div>
+                      <div className="font-medium">{lp.title}</div>
+                      <div className="text-xs text-gray-11">{lp.theme}</div>
+                    </div>
+                  </div>
+                  <Badge variant="secondary" size="sm">{lp.count.toLocaleString()} entities</Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {data.personalTakeaway && (
+            <div className="p-4 bg-amber-a3 rounded-lg border-2 border-amber-9 shadow-sm" data-testid="card-personal-takeaway">
+              <div className="flex items-center gap-2 mb-2 text-amber-11 font-bold">
+                <Star className="fill-amber-9 w-4 h-4" />
+                Your Daily Alignment
+              </div>
+              <p className="text-sm leading-relaxed text-gray-12 italic">
+                "{data.personalTakeaway}"
+              </p>
+            </div>
+          )}
+
+          <div>
+            <h3 className="font-medium mb-3 flex items-center gap-2">
+              <Compass className="w-4 h-4 text-amber-9" />
+              Top Elements
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {data.topElements?.map((el: { element: string; count: number }) => (
+                <Badge key={el.element} variant="outline" data-testid={`badge-element-${el.element}`}>
+                  {el.element}: {el.count.toLocaleString()}
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          {data.representativeCues?.length > 0 && (
+            <div>
+              <h3 className="font-medium mb-3 flex items-center gap-2">
+                <Star className="w-4 h-4 text-amber-9" />
+                Today's Energy Representatives
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                {data.representativeCues?.map((cue: { id: number; name: string; type: string; energySignature: string }) => (
+                  <div key={cue.id} className="p-2 bg-gray-a2 rounded-lg" data-testid={`card-cue-${cue.id}`}>
+                    <div className="font-medium text-sm truncate">{cue.name}</div>
+                    <div className="text-xs text-gray-11">{cue.type}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
           ) : null}
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
+      </ScrollArea>
+    </DialogContent>
+    </Dialog >
   );
 }
 
@@ -216,7 +246,7 @@ function BestDaysDialog({ open, onClose, birthDate }: { open: boolean; onClose: 
           </DialogTitle>
           <DialogDescription>Your personalized calendar based on numerology</DialogDescription>
         </DialogHeader>
-        
+
         <ScrollArea className="max-h-[60vh] pr-4">
           {isLoading ? (
             <LoadingSkeleton />
@@ -241,15 +271,27 @@ function BestDaysDialog({ open, onClose, birthDate }: { open: boolean; onClose: 
               <div>
                 <h3 className="font-medium mb-3">Your Best Days</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {data.bestDays?.map((day: { date: string; day: number; personalDay: number; rating: string; theme: string; activities: string[] }) => (
-                    <div key={day.date} className={`p-3 rounded-lg border ${getRatingColor(day.rating)}`} data-testid={`card-day-${day.day}`}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold text-lg">{day.day}</span>
-                        <Badge variant="secondary" size="sm">{day.personalDay}</Badge>
-                      </div>
-                      <div className="text-sm font-medium">{day.theme}</div>
-                      <div className="text-xs mt-1 opacity-80">{day.activities[0]}</div>
+                  <div key={day.date} className={`p-4 rounded-lg border-2 transition-all hover:scale-[1.02] ${getRatingColor(day.rating)}`} data-testid={`card-day-${day.day}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-bold text-2xl">{day.day}</span>
+                      <Badge variant="secondary" className="font-bold">{day.personalDay}</Badge>
                     </div>
+                    <div className="text-sm font-bold mb-2 uppercase tracking-wide">{day.theme}</div>
+                    <div className="text-sm mb-3 leading-snug font-medium border-t border-current/20 pt-2">
+                      {day.description}
+                    </div>
+                    <div className="bg-white/40 p-2 rounded text-xs italic border border-current/10">
+                      <span className="font-bold not-italic mr-1 text-amber-11">WHY:</span>
+                      {day.why}
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-1">
+                      {day.activities.slice(0, 2).map((act: string, idx: number) => (
+                        <Badge key={idx} variant="outline" className="text-[10px] bg-white/20 whitespace-nowrap">
+                          {act}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
                   ))}
                 </div>
               </div>
@@ -268,21 +310,20 @@ function BestDaysDialog({ open, onClose, birthDate }: { open: boolean; onClose: 
                     const isCurrentMonth = data.month === now.getMonth() + 1 && data.year === now.getFullYear();
                     const todayDate = now.getDate();
                     const firstDayOfMonth = new Date(data.year, data.month - 1, 1).getDay();
-                    
+
                     const emptyCells = Array(firstDayOfMonth).fill(null).map((_, j) => (
                       <div key={`empty-${j}`} className="p-2" />
                     ));
-                    
+
                     const dayCells = data.days?.map((day: { day: number; rating: string; personalDay: number; theme: string }) => {
                       const isToday = isCurrentMonth && day.day === todayDate;
                       return (
-                        <div 
-                          key={day.day} 
-                          className={`p-2 rounded text-sm ${
-                            day.rating === 'excellent' ? 'bg-green-a3 text-green-11 font-bold' :
+                        <div
+                          key={day.day}
+                          className={`p-2 rounded text-sm ${day.rating === 'excellent' ? 'bg-green-a3 text-green-11 font-bold' :
                             day.rating === 'good' ? 'bg-amber-a3 text-amber-11' :
-                            'bg-gray-a2 text-gray-11'
-                          } ${isToday ? 'ring-2 ring-amber-9' : ''}`}
+                              'bg-gray-a2 text-gray-11'
+                            } ${isToday ? 'ring-2 ring-amber-9' : ''}`}
                           title={`${day.theme} (Personal Day ${day.personalDay})${isToday ? ' - Today' : ''}`}
                           data-testid={`calendar-day-${day.day}`}
                         >
@@ -290,7 +331,7 @@ function BestDaysDialog({ open, onClose, birthDate }: { open: boolean; onClose: 
                         </div>
                       );
                     }) || [];
-                    
+
                     return [...emptyCells, ...dayCells];
                   })()}
                 </div>
@@ -303,9 +344,9 @@ function BestDaysDialog({ open, onClose, birthDate }: { open: boolean; onClose: 
   );
 }
 
-function CelebrityMatchesDialog({ open, onClose, lifePathNumber, energySignature }: { 
-  open: boolean; 
-  onClose: () => void; 
+function CelebrityMatchesDialog({ open, onClose, lifePathNumber, energySignature }: {
+  open: boolean;
+  onClose: () => void;
   lifePathNumber: number | null;
   energySignature: string | null;
 }) {
@@ -333,7 +374,7 @@ function CelebrityMatchesDialog({ open, onClose, lifePathNumber, energySignature
           </DialogTitle>
           <DialogDescription>Famous people who share your energy signature</DialogDescription>
         </DialogHeader>
-        
+
         <ScrollArea className="max-h-[60vh] pr-4">
           {isLoading ? (
             <LoadingSkeleton />
@@ -347,14 +388,14 @@ function CelebrityMatchesDialog({ open, onClose, lifePathNumber, energySignature
               <div className="text-sm text-gray-11">
                 Found matches from {data.totalCelebrities?.toLocaleString()} celebrities in database
               </div>
-              
+
               <div className="grid gap-3">
-                {data.matches?.map((celeb: { 
-                  id: number; 
-                  name: string; 
+                {data.matches?.map((celeb: {
+                  id: number;
+                  name: string;
                   category: string;
                   country: string;
-                  lifePathNumber: number; 
+                  lifePathNumber: number;
                   energySignature: string;
                   foundedOrBirth: string;
                   score: number;
@@ -399,9 +440,9 @@ function CelebrityMatchesDialog({ open, onClose, lifePathNumber, energySignature
   );
 }
 
-function TravelDestinationsDialog({ open, onClose, lifePathNumber, element, birthYear }: { 
-  open: boolean; 
-  onClose: () => void; 
+function TravelDestinationsDialog({ open, onClose, lifePathNumber, element, birthYear }: {
+  open: boolean;
+  onClose: () => void;
   lifePathNumber: number | null;
   element: string | null;
   birthYear: number | null;
@@ -431,7 +472,7 @@ function TravelDestinationsDialog({ open, onClose, lifePathNumber, element, birt
           </DialogTitle>
           <DialogDescription>Countries that align with your zodiac energy</DialogDescription>
         </DialogHeader>
-        
+
         <ScrollArea className="max-h-[60vh] pr-4">
           {isLoading ? (
             <LoadingSkeleton />
@@ -448,11 +489,11 @@ function TravelDestinationsDialog({ open, onClose, lifePathNumber, element, birt
                   <Badge variant="secondary" size="sm">{data.userZodiac}</Badge>
                 </div>
               )}
-              
+
               <div className="grid gap-4">
-                {data.destinations?.map((dest: { 
-                  id: number; 
-                  name: string; 
+                {data.destinations?.map((dest: {
+                  id: number;
+                  name: string;
                   foundingYear: number;
                   zodiacAnimal: string;
                   compatibleSigns: string[];
@@ -462,8 +503,8 @@ function TravelDestinationsDialog({ open, onClose, lifePathNumber, element, birt
                   score: number;
                   isUserMatch: boolean;
                 }) => (
-                  <div 
-                    key={dest.id} 
+                  <div
+                    key={dest.id}
                     className={`p-4 rounded-lg ${dest.isUserMatch ? 'bg-amber-a2 border border-amber-a4' : 'bg-gray-a2'}`}
                     data-testid={`card-destination-${dest.id}`}
                   >
@@ -486,11 +527,11 @@ function TravelDestinationsDialog({ open, onClose, lifePathNumber, element, birt
                         {dest.score}% match
                       </Badge>
                     </div>
-                    
+
                     <p className="text-sm text-gray-11 mt-3" data-testid={`text-destination-description-${dest.id}`}>
                       {dest.description}
                     </p>
-                    
+
                     <div className="flex flex-wrap gap-2 mt-3">
                       <Badge variant="outline" size="sm" className="text-xs">
                         {dest.vibe}
@@ -499,15 +540,15 @@ function TravelDestinationsDialog({ open, onClose, lifePathNumber, element, birt
                         {dest.bestFor}
                       </Badge>
                     </div>
-                    
+
                     <div className="mt-3">
                       <div className="text-xs text-gray-10 mb-1">Compatible signs:</div>
                       <div className="flex flex-wrap gap-1">
                         {dest.compatibleSigns.map((sign: string) => (
-                          <Badge 
-                            key={sign} 
+                          <Badge
+                            key={sign}
                             variant={data.userZodiac === sign ? 'default' : 'outline'}
-                            size="sm" 
+                            size="sm"
                             className={`text-xs ${data.userZodiac === sign ? 'bg-green-a3 text-green-11 border-green-a6' : ''}`}
                           >
                             {sign}
@@ -533,9 +574,9 @@ function TravelDestinationsDialog({ open, onClose, lifePathNumber, element, birt
   );
 }
 
-function RelationshipPatternsDialog({ open, onClose, lifePathNumber }: { 
-  open: boolean; 
-  onClose: () => void; 
+function RelationshipPatternsDialog({ open, onClose, lifePathNumber }: {
+  open: boolean;
+  onClose: () => void;
   lifePathNumber: number | null;
 }) {
   const { data, isLoading, error } = useQuery({
@@ -559,7 +600,7 @@ function RelationshipPatternsDialog({ open, onClose, lifePathNumber }: {
           </DialogTitle>
           <DialogDescription>Understanding your compatibility tendencies</DialogDescription>
         </DialogHeader>
-        
+
         <ScrollArea className="max-h-[60vh] pr-4">
           {isLoading ? (
             <LoadingSkeleton />
@@ -655,9 +696,9 @@ function RelationshipPatternsDialog({ open, onClose, lifePathNumber }: {
   );
 }
 
-function CareerAlignmentDialog({ open, onClose, lifePathNumber }: { 
-  open: boolean; 
-  onClose: () => void; 
+function CareerAlignmentDialog({ open, onClose, lifePathNumber }: {
+  open: boolean;
+  onClose: () => void;
   lifePathNumber: number | null;
 }) {
   const { data, isLoading, error } = useQuery({
@@ -681,7 +722,7 @@ function CareerAlignmentDialog({ open, onClose, lifePathNumber }: {
           </DialogTitle>
           <DialogDescription>Industries and roles that match your energy</DialogDescription>
         </DialogHeader>
-        
+
         <ScrollArea className="max-h-[60vh] pr-4">
           {isLoading ? (
             <LoadingSkeleton />
@@ -773,7 +814,7 @@ function ProfileRequiredPrompt({ onClose }: { onClose: () => void }) {
         </DialogHeader>
         <div className="flex flex-col gap-4 pt-4">
           <p className="text-sm text-gray-11">
-            Create your profile to unlock personalized numerology features including best days, 
+            Create your profile to unlock personalized numerology features including best days,
             celebrity matches, travel destinations, relationship patterns, and career alignment.
           </p>
           <div className="flex gap-3 justify-end">
@@ -794,9 +835,9 @@ export default function Explore() {
   const [activeFeature, setActiveFeature] = useState<FeatureType>(null);
   const [showProfilePrompt, setShowProfilePrompt] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  
+
   const savedOdisId = typeof window !== 'undefined' ? localStorage.getItem(ODIS_ID_KEY) : null;
-  
+
   const { data: profileData, isLoading: isProfileLoading } = useQuery<ProfileData & { isPro?: boolean } | null>({
     queryKey: ['/api/profile', savedOdisId],
     queryFn: async () => {
@@ -814,7 +855,7 @@ export default function Explore() {
   const isPro = profileData?.isPro ?? false;
   const profileLoaded = !savedOdisId || !isProfileLoading;
   const birthDate = profileData?.birthDate || null;
-  
+
   const calculatedProfile = useMemo(() => {
     if (!profileData?.birthDate || !profileData?.fullName) return null;
     try {
@@ -828,7 +869,7 @@ export default function Explore() {
       return null;
     }
   }, [profileData]);
-  
+
   const lifePathNumber = calculatedProfile?.lifePathNumber || null;
   const energySignature = calculatedProfile?.energySignature || null;
   const element = energySignature ? energySignature.split(' ')[0] : null;
@@ -838,14 +879,14 @@ export default function Explore() {
       setShowUpgradeModal(true);
       return;
     }
-    
+
     const feature = explorations.find(e => e.id === featureId);
-    
+
     if (feature?.requiresProfile && !hasProfile) {
       setShowProfilePrompt(true);
       return;
     }
-    
+
     setActiveFeature(featureId);
   };
 
@@ -857,7 +898,7 @@ export default function Explore() {
     <>
       <StarField />
       <Navigation />
-      
+
       <main className="pt-20 pb-12 px-4 min-h-screen" data-testid="page-explore">
         <div className="container mx-auto max-w-6xl space-y-8">
           <div className="text-center">
@@ -894,12 +935,11 @@ export default function Explore() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {explorations.map((item) => (
-              <Card 
-                key={item.id} 
-                variant="frosted" 
-                className={`hover:border-amber-6/30 transition-all cursor-pointer group relative ${
-                  profileLoaded && item.requiresProfile && !hasProfile ? 'opacity-60' : ''
-                }`}
+              <Card
+                key={item.id}
+                variant="frosted"
+                className={`hover:border-amber-6/30 transition-all cursor-pointer group relative ${profileLoaded && item.requiresProfile && !hasProfile ? 'opacity-60' : ''
+                  }`}
                 onClick={() => handleCardClick(item.id)}
                 data-testid={`card-explore-${item.id}`}
               >
@@ -943,40 +983,41 @@ export default function Explore() {
         </div>
       </main>
 
-      <TrendingEnergiesDialog 
-        open={activeFeature === 'trending'} 
-        onClose={handleCloseDialog} 
+      <TrendingEnergiesDialog
+        open={activeFeature === 'trending'}
+        onClose={() => setActiveFeature(null)}
+        profileData={profileData}
       />
-      
-      <BestDaysDialog 
-        open={activeFeature === 'best-days'} 
+
+      <BestDaysDialog
+        open={activeFeature === 'best-days'}
         onClose={handleCloseDialog}
         birthDate={birthDate}
       />
-      
-      <CelebrityMatchesDialog 
-        open={activeFeature === 'celebrity'} 
+
+      <CelebrityMatchesDialog
+        open={activeFeature === 'celebrity'}
         onClose={handleCloseDialog}
         lifePathNumber={lifePathNumber}
         energySignature={energySignature}
       />
-      
-      <TravelDestinationsDialog 
-        open={activeFeature === 'travel'} 
+
+      <TravelDestinationsDialog
+        open={activeFeature === 'travel'}
         onClose={handleCloseDialog}
         lifePathNumber={lifePathNumber}
         element={element}
         birthYear={birthDate ? new Date(birthDate).getFullYear() : null}
       />
-      
-      <RelationshipPatternsDialog 
-        open={activeFeature === 'relationship'} 
+
+      <RelationshipPatternsDialog
+        open={activeFeature === 'relationship'}
         onClose={handleCloseDialog}
         lifePathNumber={lifePathNumber}
       />
-      
-      <CareerAlignmentDialog 
-        open={activeFeature === 'career'} 
+
+      <CareerAlignmentDialog
+        open={activeFeature === 'career'}
         onClose={handleCloseDialog}
         lifePathNumber={lifePathNumber}
       />
