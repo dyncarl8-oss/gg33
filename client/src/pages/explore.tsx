@@ -215,6 +215,8 @@ function TrendingEnergiesDialog({ open, onClose, profileData }: { open: boolean;
 }
 
 function BestDaysDialog({ open, onClose, birthDate }: { open: boolean; onClose: () => void; birthDate: string | null }) {
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+
   const { data, isLoading, error } = useQuery({
     queryKey: ['/api/explore/best-days', birthDate],
     queryFn: async () => {
@@ -226,8 +228,21 @@ function BestDaysDialog({ open, onClose, birthDate }: { open: boolean; onClose: 
     enabled: open && !!birthDate,
   });
 
+  // Set initial selected day to today if in current month
+  useEffect(() => {
+    if (data && !selectedDay) {
+      const now = new Date();
+      if (data.month === now.getMonth() + 1 && data.year === now.getFullYear()) {
+        setSelectedDay(now.getDate());
+      } else {
+        setSelectedDay(1);
+      }
+    }
+  }, [data, selectedDay]);
+
   const getRatingColor = (rating: string) => {
-    switch (rating) {
+    const r = rating.toLowerCase();
+    switch (r) {
       case 'excellent': return 'bg-green-a3 border-green-a6 text-green-11';
       case 'good': return 'bg-amber-a3 border-amber-a6 text-amber-11';
       case 'challenging': return 'bg-red-a3 border-red-a6 text-red-11';
@@ -235,110 +250,150 @@ function BestDaysDialog({ open, onClose, birthDate }: { open: boolean; onClose: 
     }
   };
 
+  const selectedDayData = data?.days?.find((d: any) => d.day === selectedDay);
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[85vh]" data-testid="dialog-best-days">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-amber-9" />
-            Best Days This Month
-          </DialogTitle>
-          <DialogDescription>Your personalized calendar based on numerology</DialogDescription>
-        </DialogHeader>
-
-        <ScrollArea className="max-h-[60vh] pr-4">
-          {isLoading ? (
-            <LoadingSkeleton />
-          ) : error ? (
-            <div className="text-red-9 flex items-center gap-2" data-testid="error-best-days">
-              <AlertCircle className="w-4 h-4" />
-              Failed to load calendar
-            </div>
-          ) : data ? (
-            <div className="space-y-6" data-testid="content-best-days">
-              <div className="flex items-center justify-between p-4 bg-amber-a2 rounded-lg border border-amber-a4">
-                <div>
-                  <div className="text-xl font-bold" data-testid="text-month-name">{data.monthName} {data.year}</div>
-                  <div className="text-sm text-gray-11">Life Path {data.lifePathNumber} | Personal Year {data.personalYear}</div>
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden border-none bg-gray-1 shadow-2xl" data-testid="dialog-best-days">
+        <div className="flex flex-col h-full max-h-[90vh]">
+          <div className="p-6 pb-4 bg-gradient-to-br from-amber-a3 to-transparent border-b border-amber-a4">
+            <DialogHeader className="p-0 space-y-1">
+              <DialogTitle className="flex items-center gap-3 text-2xl font-black tracking-tight text-gray-12">
+                <div className="p-2 bg-amber-9 rounded-lg text-white shadow-lg shadow-amber-9/20">
+                  <Calendar className="w-6 h-6" />
                 </div>
-                <div className="flex gap-2">
-                  <Badge variant="outline" className="bg-green-a3 text-green-11">Excellent</Badge>
-                  <Badge variant="outline" className="bg-amber-a3 text-amber-11">Good</Badge>
-                </div>
-              </div>
+                Best Days This Month
+              </DialogTitle>
+              <DialogDescription className="text-gray-11 font-medium ml-12">Your personalized cosmic roadmap based on Life Path {data?.lifePathNumber}</DialogDescription>
+            </DialogHeader>
+          </div>
 
-              <div>
-                <h3 className="font-medium mb-3">Your Best Days</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {data.days.filter((d: any) => d.rating === 'Excellent' || d.rating === 'Good').slice(0, 6).map((day: any) => (
-                    <div key={day.day} className={`p-4 rounded-lg border-2 transition-all hover:scale-[1.02] ${getRatingColor(day.rating)}`} data-testid={`card-day-${day.day}`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-bold text-2xl">{day.day}</span>
-                        <Badge variant="secondary" className="font-bold">{day.personalDay}</Badge>
+          <ScrollArea className="flex-1">
+            <div className="p-6 space-y-8">
+              {isLoading ? (
+                <div className="py-12"><LoadingSkeleton /></div>
+              ) : error ? (
+                <div className="text-red-9 flex flex-col items-center justify-center py-12 gap-3 bg-red-a2 rounded-2xl border border-red-a4" data-testid="error-best-days">
+                  <AlertCircle className="w-10 h-10 opacity-50" />
+                  <div className="font-bold">Failed to load cosmic calendar</div>
+                </div>
+              ) : data ? (
+                <div className="space-y-8" data-testid="content-best-days">
+                  {/* Selected Day Focus - The "Perfect" detailed section */}
+                  {selectedDayData && (
+                    <div className="relative overflow-hidden rounded-3xl border-2 border-amber-a4 bg-white shadow-xl group transition-all duration-500 animate-in fade-in slide-in-from-bottom-4">
+                      <div className={`absolute top-0 right-0 p-4 font-black text-6xl opacity-10 select-none ${getRatingColor(selectedDayData.rating)}`}>
+                        {selectedDayData.day}
                       </div>
-                      <div className="text-sm font-bold mb-2 uppercase tracking-wide">{day.theme}</div>
-                      <div className="text-sm mb-3 leading-snug font-medium border-t border-current/20 pt-2">
-                        {day.description}
+                      <div className="p-8 flex flex-col md:flex-row gap-8 relative z-10">
+                        <div className="flex-shrink-0 flex flex-col items-center justify-center w-24 h-24 rounded-2xl bg-amber-9 text-white shadow-xl shadow-amber-9/30">
+                          <div className="text-3xl font-black">{selectedDayData.day}</div>
+                          <div className="text-[10px] font-bold uppercase tracking-widest opacity-80">Feb</div>
+                        </div>
+                        <div className="flex-1 space-y-4">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant="secondary" className="bg-amber-a3 text-amber-11 font-bold px-3 py-1">Personal Day {selectedDayData.personalDay}</Badge>
+                            <Badge className={`${getRatingColor(selectedDayData.rating)} border px-3 py-1 font-bold uppercase tracking-wider text-[10px]`}>
+                              {selectedDayData.rating} Energy
+                            </Badge>
+                          </div>
+                          <div>
+                            <h2 className="text-3xl font-black text-gray-12 leading-none mb-2">{selectedDayData.theme}</h2>
+                            <p className="text-gray-11 text-lg font-medium leading-relaxed">{selectedDayData.description}</p>
+                          </div>
+                          <div className="bg-amber-a2 border-l-4 border-amber-9 p-4 rounded-r-xl">
+                            <div className="text-xs font-black text-amber-11 uppercase tracking-widest mb-1">Why this Day works for you</div>
+                            <p className="text-sm text-gray-12 leading-relaxed italic font-medium">"{selectedDayData.why}"</p>
+                          </div>
+                          <div className="flex flex-wrap gap-2 pt-2">
+                            {selectedDayData.activities.map((act: string, idx: number) => (
+                              <div key={idx} className="flex items-center gap-2 px-4 py-2 bg-gray-a2 border border-gray-a4 rounded-full text-sm font-semibold text-gray-11">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-9" />
+                                {act}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
-                      <div className="bg-white/40 p-2 rounded text-xs italic border border-current/10">
-                        <span className="font-bold not-italic mr-1 text-amber-11">WHY:</span>
-                        {day.why}
+                    </div>
+                  )}
+
+                  <div className="grid md:grid-cols-2 gap-8">
+                    {/* Top Recommended Days */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp className="w-4 h-4 text-green-9" />
+                        <h3 className="text-sm font-black uppercase tracking-widest text-gray-11 underline decoration-amber-9/30 underline-offset-4">Top Power Days</h3>
                       </div>
-                      <div className="mt-3 flex flex-wrap gap-1">
-                        {day.activities.slice(0, 2).map((act: string, idx: number) => (
-                          <Badge key={idx} variant="outline" className="text-[10px] bg-white/20 whitespace-nowrap">
-                            {act}
-                          </Badge>
+                      <div className="grid grid-cols-2 gap-3">
+                        {data.days.filter((d: any) => d.rating.toLowerCase() === 'excellent' || d.rating.toLowerCase() === 'good').slice(0, 4).map((day: any) => (
+                          <button
+                            key={day.day}
+                            onClick={() => setSelectedDay(day.day)}
+                            className={`p-4 rounded-2xl border-2 text-left transition-all duration-300 hover:-translate-y-1 ${selectedDay === day.day ? 'ring-4 ring-amber-9/20 scale-[1.02]' : ''} ${getRatingColor(day.rating)}`}
+                          >
+                            <div className="flex justify-between items-start mb-1">
+                              <span className="text-2xl font-black">{day.day}</span>
+                              <Badge variant="outline" className="text-[9px] font-black border-current/30">{day.personalDay}</Badge>
+                            </div>
+                            <div className="text-xs font-bold uppercase truncate opacity-80">{day.theme}</div>
+                          </button>
                         ))}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
 
-              <div>
-                <h3 className="font-medium mb-3 flex items-center gap-2">
-                  Full Month Overview
-                  <Badge variant="outline" size="sm" className="ring-2 ring-amber-9 text-xs" data-testid="badge-today-legend">Today</Badge>
-                </h3>
-                <div className="grid grid-cols-7 gap-1 text-center">
-                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                    <div key={i} className="text-xs text-gray-11 font-medium py-1">{d}</div>
-                  ))}
-                  {(() => {
-                    const now = new Date();
-                    const isCurrentMonth = data.month === now.getMonth() + 1 && data.year === now.getFullYear();
-                    const todayDate = now.getDate();
-                    const firstDayOfMonth = new Date(data.year, data.month - 1, 1).getDay();
-
-                    const emptyCells = Array(firstDayOfMonth).fill(null).map((_, j) => (
-                      <div key={`empty-${j}`} className="p-2" />
-                    ));
-
-                    const dayCells = data.days?.map((day: { day: number; rating: string; personalDay: number; theme: string }) => {
-                      const isToday = isCurrentMonth && day.day === todayDate;
-                      return (
-                        <div
-                          key={day.day}
-                          className={`p-2 rounded text-sm ${day.rating === 'excellent' ? 'bg-green-a3 text-green-11 font-bold' :
-                            day.rating === 'good' ? 'bg-amber-a3 text-amber-11' :
-                              'bg-gray-a2 text-gray-11'
-                            } ${isToday ? 'ring-2 ring-amber-9' : ''}`}
-                          title={`${day.theme} (Personal Day ${day.personalDay})${isToday ? ' - Today' : ''}`}
-                          data-testid={`calendar-day-${day.day}`}
-                        >
-                          {day.day}
+                    {/* Full Month Calendar */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calendar className="w-4 h-4 text-amber-9" />
+                        <h3 className="text-sm font-black uppercase tracking-widest text-gray-11 underline decoration-amber-9/30 underline-offset-4">Full Monthly Grid</h3>
+                      </div>
+                      <div className="p-4 bg-white rounded-3xl border border-gray-a4 shadow-sm">
+                        <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                            <div key={i} className="text-[10px] text-gray-10 font-black py-1">{d}</div>
+                          ))}
                         </div>
-                      );
-                    }) || [];
+                        <div className="grid grid-cols-7 gap-1">
+                          {(() => {
+                            const now = new Date();
+                            const isCurrentMonth = data.month === now.getMonth() + 1 && data.year === now.getFullYear();
+                            const todayDate = now.getDate();
+                            const firstDayOfMonth = new Date(data.year, data.month - 1, 1).getDay();
 
-                    return [...emptyCells, ...dayCells];
-                  })()}
+                            const emptyCells = Array(firstDayOfMonth).fill(null).map((_, j) => (
+                              <div key={`empty-${j}`} className="aspect-square" />
+                            ));
+
+                            const dayCells = data.days?.map((day: any) => {
+                              const isToday = isCurrentMonth && day.day === todayDate;
+                              const isSelected = selectedDay === day.day;
+                              return (
+                                <button
+                                  key={day.day}
+                                  onClick={() => setSelectedDay(day.day)}
+                                  className={`aspect-square rounded-xl flex items-center justify-center text-xs transition-all ${day.rating.toLowerCase() === 'excellent' ? 'bg-green-a4 text-green-11 font-black ring-1 ring-green-a6' :
+                                    day.rating.toLowerCase() === 'good' ? 'bg-amber-a3 text-amber-11 font-bold border border-amber-a5' :
+                                      'bg-gray-a2 text-gray-11'
+                                    } ${isToday ? 'ring-2 ring-amber-9 ring-offset-2' : ''} ${isSelected ? 'ring-2 ring-gray-12 ring-offset-2 scale-110 z-10 shadow-lg' : 'hover:scale-105'} `}
+                                  title={`${day.theme} (Personal Day ${day.personalDay})${isToday ? ' - Today' : ''}`}
+                                >
+                                  {day.day}
+                                </button>
+                              );
+                            }) || [];
+
+                            return [...emptyCells, ...dayCells];
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : null}
             </div>
-          ) : null}
-        </ScrollArea>
+          </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
