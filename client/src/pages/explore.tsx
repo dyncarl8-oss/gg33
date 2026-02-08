@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Navigation } from '@/components/Navigation';
 import { StarField } from '@/components/StarField';
@@ -10,10 +10,9 @@ import { UpgradeModal } from '@/components/UpgradeModal';
 import { Compass, TrendingUp, Calendar, Star, Globe, Heart, Loader2, MapPin, Briefcase, Users, Check, AlertCircle, X, Lock, Crown } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Link } from 'wouter';
-import { calculateComprehensiveProfile } from '@/lib/numerology';
+import { calculateComprehensiveProfile, calculateLifePathNumber } from '@/lib/numerology';
 
 const ODIS_ID_KEY = 'gg33-odis-id';
-import { calculateLifePathNumber } from "@/lib/numerology";
 
 type FeatureType = 'trending' | 'best-days' | 'celebrity' | 'travel' | 'relationship' | 'career' | null;
 
@@ -326,7 +325,7 @@ function BestDaysDialog({ open, onClose, birthDate }: { open: boolean; onClose: 
                         <h3 className="text-sm font-black uppercase tracking-widest text-gray-11 underline decoration-amber-9/30 underline-offset-4">Top Power Days</h3>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
-                        {data.days.filter((d: any) => d.rating.toLowerCase() === 'excellent' || d.rating.toLowerCase() === 'good').slice(0, 4).map((day: any) => (
+                        {data.days?.filter((d: any) => d.rating.toLowerCase() === 'excellent' || d.rating.toLowerCase() === 'good').slice(0, 4).map((day: any) => (
                           <button
                             key={day.day}
                             onClick={() => setSelectedDay(day.day)}
