@@ -12,7 +12,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Link } from 'wouter';
 import { calculateComprehensiveProfile } from '@/lib/numerology';
 
-const ODIS_ID_KEY = 'gg33-odis-id'; import { calculateLifePathNumber } from "@/lib/numerology";
+const ODIS_ID_KEY = 'gg33-odis-id';
+import { calculateLifePathNumber } from "@/lib/numerology";
 
 type FeatureType = 'trending' | 'best-days' | 'celebrity' | 'travel' | 'relationship' | 'career' | null;
 
@@ -124,93 +125,91 @@ function TrendingEnergiesDialog({ open, onClose, profileData }: { open: boolean;
               <AlertCircle className="w-4 h-4" />
               Failed to load trending energies
             </div>
-            Failed to load trending energies
-        </div>
-        ) : data ? (
-        <div className="space-y-6" data-testid="content-trending">
-          <div className="flex flex-col gap-4 p-5 bg-amber-a2 rounded-xl border-2 border-amber-a4 shadow-inner">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-bold text-amber-11 uppercase tracking-widest">Universal Day Number</div>
-              <div className="text-xs text-gray-10 font-mono">{data.date}</div>
-            </div>
-            <div className="flex items-center gap-6">
-              <div className="text-6xl font-black text-amber-9 drop-shadow-sm" data-testid="text-universal-day">{data.universalDay}</div>
-              <div className="flex-1">
-                <div className="text-xl font-bold text-gray-12" data-testid="text-day-title">{data.todayTitle}</div>
-                <div className="text-md text-amber-11 font-medium italic" data-testid="text-day-theme">{data.todayTheme}</div>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="font-medium mb-3 flex items-center gap-2">
-              <Users className="w-4 h-4 text-amber-9" />
-              Top Life Paths in Database
-            </h3>
-            <div className="grid gap-2">
-              {data.topLifePaths?.map((lp: { number: number; count: number; title: string; theme: string }, i: number) => (
-                <div key={lp.number} className="flex items-center justify-between p-3 bg-gray-a2 rounded-lg" data-testid={`card-lifepath-${lp.number}`}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-amber-a3 flex items-center justify-center font-bold text-amber-9">
-                      {lp.number}
-                    </div>
-                    <div>
-                      <div className="font-medium">{lp.title}</div>
-                      <div className="text-xs text-gray-11">{lp.theme}</div>
-                    </div>
-                  </div>
-                  <Badge variant="secondary" size="sm">{lp.count.toLocaleString()} entities</Badge>
+          ) : data ? (
+            <div className="space-y-6" data-testid="content-trending">
+              <div className="flex flex-col gap-4 p-5 bg-amber-a2 rounded-xl border-2 border-amber-a4 shadow-inner">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-bold text-amber-11 uppercase tracking-widest">Universal Day Number</div>
+                  <div className="text-xs text-gray-10 font-mono">{data.date}</div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {data.personalTakeaway && (
-            <div className="p-4 bg-amber-a3 rounded-lg border-2 border-amber-9 shadow-sm" data-testid="card-personal-takeaway">
-              <div className="flex items-center gap-2 mb-2 text-amber-11 font-bold">
-                <Star className="fill-amber-9 w-4 h-4" />
-                Your Daily Alignment
-              </div>
-              <p className="text-sm leading-relaxed text-gray-12 italic">
-                "{data.personalTakeaway}"
-              </p>
-            </div>
-          )}
-
-          <div>
-            <h3 className="font-medium mb-3 flex items-center gap-2">
-              <Compass className="w-4 h-4 text-amber-9" />
-              Top Elements
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {data.topElements?.map((el: { element: string; count: number }) => (
-                <Badge key={el.element} variant="outline" data-testid={`badge-element-${el.element}`}>
-                  {el.element}: {el.count.toLocaleString()}
-                </Badge>
-              ))}
-            </div>
-          </div>
-
-          {data.representativeCues?.length > 0 && (
-            <div>
-              <h3 className="font-medium mb-3 flex items-center gap-2">
-                <Star className="w-4 h-4 text-amber-9" />
-                Today's Energy Representatives
-              </h3>
-              <div className="grid grid-cols-2 gap-2">
-                {data.representativeCues?.map((cue: { id: number; name: string; type: string; energySignature: string }) => (
-                  <div key={cue.id} className="p-2 bg-gray-a2 rounded-lg" data-testid={`card-cue-${cue.id}`}>
-                    <div className="font-medium text-sm truncate">{cue.name}</div>
-                    <div className="text-xs text-gray-11">{cue.type}</div>
+                <div className="flex items-center gap-6">
+                  <div className="text-6xl font-black text-amber-9 drop-shadow-sm" data-testid="text-universal-day">{data.universalDay}</div>
+                  <div className="flex-1">
+                    <div className="text-xl font-bold text-gray-12" data-testid="text-day-title">{data.todayTitle}</div>
+                    <div className="text-md text-amber-11 font-medium italic" data-testid="text-day-theme">{data.todayTheme}</div>
                   </div>
-                ))}
+                </div>
               </div>
+
+              <div>
+                <h3 className="font-medium mb-3 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-amber-9" />
+                  Top Life Paths in Database
+                </h3>
+                <div className="grid gap-2">
+                  {data.topLifePaths?.map((lp: { number: number; count: number; title: string; theme: string }, i: number) => (
+                    <div key={lp.number} className="flex items-center justify-between p-3 bg-gray-a2 rounded-lg" data-testid={`card-lifepath-${lp.number}`}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-amber-a3 flex items-center justify-center font-bold text-amber-9">
+                          {lp.number}
+                        </div>
+                        <div>
+                          <div className="font-medium">{lp.title}</div>
+                          <div className="text-xs text-gray-11">{lp.theme}</div>
+                        </div>
+                      </div>
+                      <Badge variant="secondary" size="sm">{lp.count.toLocaleString()} entities</Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {data.personalTakeaway && (
+                <div className="p-4 bg-amber-a3 rounded-lg border-2 border-amber-9 shadow-sm" data-testid="card-personal-takeaway">
+                  <div className="flex items-center gap-2 mb-2 text-amber-11 font-bold">
+                    <Star className="fill-amber-9 w-4 h-4" />
+                    Your Daily Alignment
+                  </div>
+                  <p className="text-sm leading-relaxed text-gray-12 italic">
+                    "{data.personalTakeaway}"
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <h3 className="font-medium mb-3 flex items-center gap-2">
+                  <Compass className="w-4 h-4 text-amber-9" />
+                  Top Elements
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {data.topElements?.map((el: { element: string; count: number }) => (
+                    <Badge key={el.element} variant="outline" data-testid={`badge-element-${el.element}`}>
+                      {el.element}: {el.count.toLocaleString()}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              {data.representativeCues?.length > 0 && (
+                <div>
+                  <h3 className="font-medium mb-3 flex items-center gap-2">
+                    <Star className="w-4 h-4 text-amber-9" />
+                    Today's Energy Representatives
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {data.representativeCues?.map((cue: { id: number; name: string; type: string; energySignature: string }) => (
+                      <div key={cue.id} className="p-2 bg-gray-a2 rounded-lg" data-testid={`card-cue-${cue.id}`}>
+                        <div className="font-medium text-sm truncate">{cue.name}</div>
+                        <div className="text-xs text-gray-11">{cue.type}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
           ) : null}
-      </ScrollArea>
-    </DialogContent>
+        </ScrollArea>
+      </DialogContent>
     </Dialog >
   );
 }
@@ -271,27 +270,28 @@ function BestDaysDialog({ open, onClose, birthDate }: { open: boolean; onClose: 
               <div>
                 <h3 className="font-medium mb-3">Your Best Days</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  <div key={day.date} className={`p-4 rounded-lg border-2 transition-all hover:scale-[1.02] ${getRatingColor(day.rating)}`} data-testid={`card-day-${day.day}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-bold text-2xl">{day.day}</span>
-                      <Badge variant="secondary" className="font-bold">{day.personalDay}</Badge>
+                  {data.days.filter((d: any) => d.rating === 'Excellent' || d.rating === 'Good').slice(0, 6).map((day: any) => (
+                    <div key={day.day} className={`p-4 rounded-lg border-2 transition-all hover:scale-[1.02] ${getRatingColor(day.rating)}`} data-testid={`card-day-${day.day}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-bold text-2xl">{day.day}</span>
+                        <Badge variant="secondary" className="font-bold">{day.personalDay}</Badge>
+                      </div>
+                      <div className="text-sm font-bold mb-2 uppercase tracking-wide">{day.theme}</div>
+                      <div className="text-sm mb-3 leading-snug font-medium border-t border-current/20 pt-2">
+                        {day.description}
+                      </div>
+                      <div className="bg-white/40 p-2 rounded text-xs italic border border-current/10">
+                        <span className="font-bold not-italic mr-1 text-amber-11">WHY:</span>
+                        {day.why}
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-1">
+                        {day.activities.slice(0, 2).map((act: string, idx: number) => (
+                          <Badge key={idx} variant="outline" className="text-[10px] bg-white/20 whitespace-nowrap">
+                            {act}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
-                    <div className="text-sm font-bold mb-2 uppercase tracking-wide">{day.theme}</div>
-                    <div className="text-sm mb-3 leading-snug font-medium border-t border-current/20 pt-2">
-                      {day.description}
-                    </div>
-                    <div className="bg-white/40 p-2 rounded text-xs italic border border-current/10">
-                      <span className="font-bold not-italic mr-1 text-amber-11">WHY:</span>
-                      {day.why}
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-1">
-                      {day.activities.slice(0, 2).map((act: string, idx: number) => (
-                        <Badge key={idx} variant="outline" className="text-[10px] bg-white/20 whitespace-nowrap">
-                          {act}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
                   ))}
                 </div>
               </div>
