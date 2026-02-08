@@ -280,7 +280,7 @@ function BestDaysDialog({ open, onClose, birthDate }: { open: boolean; onClose: 
                 <div className="space-y-8" data-testid="content-best-days">
                   {/* Selected Day Focus - The "Perfect" detailed section */}
                   {selectedDayData && (
-                    <div className="relative overflow-hidden rounded-3xl border-2 border-amber-a4 bg-white shadow-xl group transition-all duration-500 animate-in fade-in slide-in-from-bottom-4">
+                    <div className="relative overflow-hidden rounded-3xl border-2 border-amber-a4 bg-gray-a2 backdrop-blur-xl shadow-xl group transition-all duration-500 animate-in fade-in slide-in-from-bottom-4">
                       <div className={`absolute top-0 right-0 p-4 font-black text-6xl opacity-10 select-none ${getRatingColor(selectedDayData.rating)}`}>
                         {selectedDayData.day}
                       </div>
@@ -347,10 +347,10 @@ function BestDaysDialog({ open, onClose, birthDate }: { open: boolean; onClose: 
                         <Calendar className="w-4 h-4 text-amber-9" />
                         <h3 className="text-sm font-black uppercase tracking-widest text-gray-11 underline decoration-amber-9/30 underline-offset-4">Full Monthly Grid</h3>
                       </div>
-                      <div className="p-4 bg-white rounded-3xl border border-gray-a4 shadow-sm">
+                      <div className="p-4 bg-gray-a2 backdrop-blur-md rounded-3xl border border-gray-a4 shadow-sm">
                         <div className="grid grid-cols-7 gap-1 text-center mb-2">
                           {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                            <div key={i} className="text-[10px] text-gray-10 font-black py-1">{d}</div>
+                            <div key={i} className="text-[10px] text-gray-11 font-black py-1">{d}</div>
                           ))}
                         </div>
                         <div className="grid grid-cols-7 gap-1">
@@ -373,7 +373,7 @@ function BestDaysDialog({ open, onClose, birthDate }: { open: boolean; onClose: 
                                   onClick={() => setSelectedDay(day.day)}
                                   className={`aspect-square rounded-xl flex items-center justify-center text-xs transition-all ${day.rating.toLowerCase() === 'excellent' ? 'bg-green-a4 text-green-11 font-black ring-1 ring-green-a6' :
                                     day.rating.toLowerCase() === 'good' ? 'bg-amber-a3 text-amber-11 font-bold border border-amber-a5' :
-                                      'bg-gray-a2 text-gray-11'
+                                      'bg-gray-a2 text-gray-12'
                                     } ${isToday ? 'ring-2 ring-amber-9 ring-offset-2' : ''} ${isSelected ? 'ring-2 ring-gray-12 ring-offset-2 scale-110 z-10 shadow-lg' : 'hover:scale-105'} `}
                                   title={`${day.theme} (Personal Day ${day.personalDay})${isToday ? ' - Today' : ''}`}
                                 >
