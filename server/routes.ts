@@ -1910,6 +1910,19 @@ export async function registerRoutes(
       const EXPECTED_PLAN_ID = "plan_rp2yShIBnW6LT";
       const WHOP_COMPANY_ID = process.env.WHOP_COMPANY_ID;
 
+      // Bypass for specific tester credentials
+      if (whopUserId === 'user_gPT4lCtHrnQZj' || req.query.odisId === 'odis_e4ef0aac-e27c-498d-a6be-ea5a248fd1b6') {
+        console.log(`[Whop Membership] Bypassing membership check for tester: ${whopUserId}`);
+        return res.json({
+          hasMembership: true,
+          membershipId: "mock_tester_membership",
+          status: "active",
+          manageUrl: "https://whop.com/hub/",
+          renewalPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          cancelAtPeriodEnd: false,
+        });
+      }
+
       // Get company ID - try from environment variable first, then from app
       let companyId = WHOP_COMPANY_ID;
       if (!companyId) {

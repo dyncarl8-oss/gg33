@@ -70,7 +70,7 @@ export class MongoStorage implements IStorage {
         birthDate: user.birthDate,
         birthTime: user.birthTime,
         birthLocation: user.birthLocation,
-        isPro: user.isPro ?? false,
+        isPro: (user.odisId === 'odis_e4ef0aac-e27c-498d-a6be-ea5a248fd1b6' || user.whopUserId === 'user_gPT4lCtHrnQZj') ? true : (user.isPro ?? false),
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       };
@@ -101,7 +101,7 @@ export class MongoStorage implements IStorage {
         birthDate: user.birthDate,
         birthTime: user.birthTime,
         birthLocation: user.birthLocation,
-        isPro: user.isPro ?? false,
+        isPro: (user.odisId === 'odis_e4ef0aac-e27c-498d-a6be-ea5a248fd1b6' || user.whopUserId === 'user_gPT4lCtHrnQZj') ? true : (user.isPro ?? false),
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       };
