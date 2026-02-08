@@ -679,7 +679,7 @@ function RelationshipPatternsDialog({ open, onClose, lifePathNumber }: {
               </div>
 
               <div className="grid md:grid-cols-3 gap-4">
-                <div className="p-4 bg-green-a2 rounded-lg border border-green-a4">
+                <div className="p-4 bg-green-a2 rounded-lg border border-green-a4 shadow-sm transition-all hover:bg-green-a3">
                   <div className="font-medium text-green-11 mb-2 flex items-center gap-2">
                     <Check className="w-4 h-4" />
                     Best Matches
@@ -687,16 +687,16 @@ function RelationshipPatternsDialog({ open, onClose, lifePathNumber }: {
                   <div className="space-y-2">
                     {data.bestMatches?.map((match: { number: number; title: string }) => (
                       <div key={match.number} className="flex items-center gap-2" data-testid={`card-best-match-${match.number}`}>
-                        <div className="w-6 h-6 rounded-full bg-green-a3 flex items-center justify-center text-green-11 text-sm font-bold">
+                        <div className="w-6 h-6 rounded-full bg-green-a3 flex items-center justify-center text-green-11 text-sm font-bold shadow-inner">
                           {match.number}
                         </div>
-                        <span className="text-sm">{match.title}</span>
+                        <span className="text-sm font-medium">{match.title}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="p-4 bg-amber-a2 rounded-lg border border-amber-a4">
+                <div className="p-4 bg-amber-a2 rounded-lg border border-amber-a4 shadow-sm transition-all hover:bg-amber-a3">
                   <div className="font-medium text-amber-11 mb-2 flex items-center gap-2">
                     <Star className="w-4 h-4" />
                     Good Matches
@@ -704,16 +704,16 @@ function RelationshipPatternsDialog({ open, onClose, lifePathNumber }: {
                   <div className="space-y-2">
                     {data.goodMatches?.map((match: { number: number; title: string }) => (
                       <div key={match.number} className="flex items-center gap-2" data-testid={`card-good-match-${match.number}`}>
-                        <div className="w-6 h-6 rounded-full bg-amber-a3 flex items-center justify-center text-amber-11 text-sm font-bold">
+                        <div className="w-6 h-6 rounded-full bg-amber-a3 flex items-center justify-center text-amber-11 text-sm font-bold shadow-inner">
                           {match.number}
                         </div>
-                        <span className="text-sm">{match.title}</span>
+                        <span className="text-sm font-medium">{match.title}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="p-4 bg-gray-a2 rounded-lg border border-gray-a4">
+                <div className="p-4 bg-gray-a2 rounded-lg border border-gray-a4 shadow-sm transition-all hover:bg-gray-a3">
                   <div className="font-medium text-gray-11 mb-2 flex items-center gap-2">
                     <AlertCircle className="w-4 h-4" />
                     Challenging
@@ -721,13 +721,45 @@ function RelationshipPatternsDialog({ open, onClose, lifePathNumber }: {
                   <div className="space-y-2">
                     {data.challengingMatches?.map((match: { number: number; title: string }) => (
                       <div key={match.number} className="flex items-center gap-2" data-testid={`card-challenging-match-${match.number}`}>
-                        <div className="w-6 h-6 rounded-full bg-gray-a3 flex items-center justify-center text-gray-11 text-sm font-bold">
+                        <div className="w-6 h-6 rounded-full bg-gray-a3 flex items-center justify-center text-gray-11 text-sm font-bold shadow-inner">
                           {match.number}
                         </div>
-                        <span className="text-sm">{match.title}</span>
+                        <span className="text-sm font-medium">{match.title}</span>
                       </div>
                     ))}
                   </div>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="p-4 bg-gray-a2/50 backdrop-blur-sm rounded-2xl border border-gray-a3">
+                  <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-amber-11">
+                    <Compass className="w-4 h-4" />
+                    Western Zodiac Affinities
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {data.westernSigns?.map((sign: string) => (
+                      <Badge key={sign} variant="secondary" className="bg-amber-a3 text-amber-11 border-amber-a4 hover:bg-amber-a4">
+                        {sign}
+                      </Badge>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-gray-10 mt-3 italic">These signs naturally resonate with your Life Path\'s elemental focus.</p>
+                </div>
+
+                <div className="p-4 bg-gray-a2/50 backdrop-blur-sm rounded-2xl border border-gray-a3">
+                  <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-amber-11">
+                    <Globe className="w-4 h-4" />
+                    Chinese Zodiac Affinities
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {data.chineseSigns?.map((sign: string) => (
+                      <Badge key={sign} variant="secondary" className="bg-amber-a3 text-amber-11 border-amber-a4 hover:bg-amber-a4">
+                        {sign}
+                      </Badge>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-gray-10 mt-3 italic">Signs that offer the best energetic synergy for long-term growth.</p>
                 </div>
               </div>
 

@@ -1362,20 +1362,111 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Invalid life path number" });
       }
 
-      // Compatibility matrix based on numerology
-      const compatibilityData: Record<number, { best: number[]; good: number[]; challenging: number[]; description: string }> = {
-        1: { best: [3, 5], good: [1, 2, 9], challenging: [4, 8], description: 'As a natural leader, you thrive with creative and adventurous partners who appreciate your independence.' },
-        2: { best: [4, 8], good: [1, 2, 6], challenging: [5, 7], description: 'Your diplomatic nature flourishes with stable, ambitious partners who value harmony and commitment.' },
-        3: { best: [1, 5, 7], good: [3, 6, 9], challenging: [4, 8], description: 'Your creative spirit connects best with innovative and intellectual partners who appreciate your expressiveness.' },
-        4: { best: [2, 8], good: [4, 6, 7], challenging: [1, 3, 5], description: 'Your grounded nature pairs well with practical, ambitious partners who share your commitment to building a secure future.' },
-        5: { best: [1, 3, 7], good: [5, 9], challenging: [2, 4, 6], description: 'Your adventurous spirit thrives with partners who embrace change and give you freedom to explore.' },
-        6: { best: [2, 9], good: [3, 4, 6], challenging: [1, 5, 7], description: 'Your nurturing heart connects deeply with compassionate partners who value family and responsibility.' },
-        7: { best: [3, 5], good: [1, 7, 9], challenging: [2, 6, 8], description: 'Your introspective nature appreciates intellectual and independent partners who respect your need for space.' },
-        8: { best: [2, 4], good: [6, 8], challenging: [1, 3, 7], description: 'Your ambitious drive pairs well with practical, supportive partners who share your vision for success.' },
-        9: { best: [1, 6], good: [2, 3, 9], challenging: [4, 5, 8], description: 'Your humanitarian heart flourishes with partners who share your idealism and compassion for others.' },
-        11: { best: [2, 6], good: [1, 7, 11], challenging: [4, 8], description: 'Your intuitive gifts resonate with sensitive, spiritual partners who understand your heightened awareness.' },
-        22: { best: [4, 8], good: [2, 6, 22], challenging: [3, 5], description: 'Your master builder energy pairs with practical visionaries who can help manifest your grand dreams.' },
-        33: { best: [6, 9], good: [3, 11, 33], challenging: [1, 8], description: 'Your healing presence attracts compassionate souls who share your dedication to service and unconditional love.' },
+      // Compatibility matrix based on numerology with Zodiac synergies
+      const compatibilityData: Record<number, {
+        best: number[];
+        good: number[];
+        challenging: number[];
+        description: string;
+        westernSigns: string[];
+        chineseSigns: string[];
+      }> = {
+        1: {
+          best: [3, 5],
+          good: [1, 2, 9],
+          challenging: [4, 8],
+          description: 'As a natural leader, you thrive with creative and adventurous partners who appreciate your independence.',
+          westernSigns: ['Aries', 'Leo', 'Sagittarius'],
+          chineseSigns: ['Tiger', 'Horse', 'Monkey']
+        },
+        2: {
+          best: [4, 8],
+          good: [1, 2, 6],
+          challenging: [5, 7],
+          description: 'Your diplomatic nature flourishes with stable, ambitious partners who value harmony and commitment.',
+          westernSigns: ['Cancer', 'Scorpio', 'Pisces'],
+          chineseSigns: ['Rabbit', 'Pig', 'Ox']
+        },
+        3: {
+          best: [1, 5, 7],
+          good: [3, 6, 9],
+          challenging: [4, 8],
+          description: 'Your creative spirit connects best with innovative and intellectual partners who appreciate your expressiveness.',
+          westernSigns: ['Gemini', 'Libra', 'Aquarius'],
+          chineseSigns: ['Rooster', 'Dragon', 'Monkey']
+        },
+        4: {
+          best: [2, 8],
+          good: [4, 6, 7],
+          challenging: [1, 3, 5],
+          description: 'Your grounded nature pairs well with practical, ambitious partners who share your commitment to building a secure future.',
+          westernSigns: ['Taurus', 'Virgo', 'Capricorn'],
+          chineseSigns: ['Ox', 'Dog', 'Snake']
+        },
+        5: {
+          best: [1, 3, 7],
+          good: [5, 9],
+          challenging: [2, 4, 6],
+          description: 'Your adventurous spirit thrives with partners who embrace change and give you freedom to explore.',
+          westernSigns: ['Gemini', 'Sagittarius', 'Aquarius'],
+          chineseSigns: ['Horse', 'Monkey', 'Rat']
+        },
+        6: {
+          best: [2, 9],
+          good: [3, 4, 6],
+          challenging: [1, 5, 7],
+          description: 'Your nurturing heart connects deeply with compassionate partners who value family and responsibility.',
+          westernSigns: ['Taurus', 'Cancer', 'Libra'],
+          chineseSigns: ['Goat', 'Rabbit', 'Pig']
+        },
+        7: {
+          best: [3, 5],
+          good: [1, 7, 9],
+          challenging: [2, 6, 8],
+          description: 'Your introspective nature appreciates intellectual and independent partners who respect your need for space.',
+          westernSigns: ['Virgo', 'Scorpio', 'Pisces'],
+          chineseSigns: ['Snake', 'Rooster', 'Goat']
+        },
+        8: {
+          best: [2, 4],
+          good: [6, 8],
+          challenging: [1, 3, 7],
+          description: 'Your ambitious drive pairs well with practical, supportive partners who share your vision for success.',
+          westernSigns: ['Leo', 'Scorpio', 'Capricorn'],
+          chineseSigns: ['Tiger', 'Dragon', 'Ox']
+        },
+        9: {
+          best: [1, 6],
+          good: [2, 3, 9],
+          challenging: [4, 5, 8],
+          description: 'Your humanitarian heart flourishes with partners who share your idealism and compassion for others.',
+          westernSigns: ['Cancer', 'Sagittarius', 'Pisces'],
+          chineseSigns: ['Pig', 'Dog', 'Rabbit']
+        },
+        11: {
+          best: [2, 6],
+          good: [1, 7, 11],
+          challenging: [4, 8],
+          description: 'Your intuitive gifts resonate with sensitive, spiritual partners who understand your heightened awareness.',
+          westernSigns: ['Aquarius', 'Pisces', 'Gemini'],
+          chineseSigns: ['Horse', 'Dragon', 'Snake']
+        },
+        22: {
+          best: [4, 8],
+          good: [2, 6, 22],
+          challenging: [3, 5],
+          description: 'Your master builder energy pairs with practical visionaries who can help manifest your grand dreams.',
+          westernSigns: ['Capricorn', 'Taurus', 'Virgo'],
+          chineseSigns: ['Ox', 'Dog', 'Rooster']
+        },
+        33: {
+          best: [6, 9],
+          good: [3, 11, 33],
+          challenging: [1, 8],
+          description: 'Your healing presence attracts compassionate souls who share your dedication to service and unconditional love.',
+          westernSigns: ['Libra', 'Pisces', 'Cancer'],
+          chineseSigns: ['Goat', 'Pig', 'Rabbit']
+        },
       };
 
       const data = compatibilityData[lifePathNumber] || compatibilityData[9];
