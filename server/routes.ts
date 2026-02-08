@@ -1482,6 +1482,8 @@ export async function registerRoutes(
         lifePathNumber,
         title: lifePathMeanings[lifePathNumber],
         description: data.description,
+        westernSigns: data.westernSigns,
+        chineseSigns: data.chineseSigns,
         bestMatches: data.best.map(n => ({ number: n, title: lifePathMeanings[n] })),
         goodMatches: data.good.map(n => ({ number: n, title: lifePathMeanings[n] })),
         challengingMatches: data.challenging.map(n => ({ number: n, title: lifePathMeanings[n] })),
