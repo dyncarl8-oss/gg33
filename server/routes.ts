@@ -1067,6 +1067,38 @@ export async function registerRoutes(
         },
       };
 
+      /**
+       * Generates a deep, personalized explanation for why a specific Personal Day is high-rated
+       * for a specific Life Path Number.
+       */
+      function getPersonalizedReasoning(lp: number, pd: number): string {
+        // Double Vibration / Alignment
+        if (lp === pd) {
+          return `This is a 'Mirror Day' of absolute alignment. As a Life Path ${lp}, you are naturally tuned to this vibration. Today, the external flow of the universe perfectly matches your internal soul frequency. It's a day of exponential power where your natural gifts aren't just supported—they are amplified. You don't have to swim against the current today; you ARE the current.`;
+        }
+
+        // Master Number synergy
+        if ([11, 22, 33].includes(pd)) {
+          return `You are walking through a 'Master Vibration' portal today. This high-frequency day acts as a spiritual catalyst for your Life Path ${lp} mission. It provides the advanced perspective and intuitive 'lightning' needed to solve complex problems that usually slow you down. Expect a breakthrough in how you view your purpose.`;
+        }
+
+        // Specific Synergies
+        const synergies: Record<number, Record<number, string>> = {
+          1: { 8: "Today's pioneering energy is the perfect engine for your Life Path 8 leadership. Use this fresh start to launch the big-scale visions you've been architecting." },
+          3: { 5: "Your Life Path 3 charisma finds a playground in today's 5 energy of freedom. It's the ultimate day for creative networking and spontaneous expression that 'clicks' with the right people." },
+          8: { 1: "The structured power of an 8 day provides the solid foundation your Life Path 1 pioneering spirit needs to actually build something that lasts, rather than just starting another project." },
+          6: { 2: "The nurturing 6 vibration perfectly complements your Life Path 2 diplomacy. You have the heart and the words today to heal any division and bring people into harmony." },
+          9: { 7: "Today's 9 vibration of completion allows your Life Path 7 wisdom to finally see the 'Full Picture'. It's a day of profound spiritual closure and humanitarian breakthrough." },
+        };
+
+        const synergyText = synergies[pd]?.[lp];
+        if (synergyText) return synergyText;
+
+        // Fallback for Good/Excellent ratings (Generic but personalized to LP)
+        const baseReasoning = personalDayThemes[pd]?.why || "This day aligns with your personal numerological cycle.";
+        return `${baseReasoning} For you as a Life Path ${lp}, this vibration helps you refine your core mission by giving you the specific ${personalDayThemes[pd]?.theme.toLowerCase()} needed at this exact point in your growth.`;
+      }
+
       for (let day = 1; day <= daysInMonth; day++) {
         const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
@@ -1078,20 +1110,18 @@ export async function registerRoutes(
         let rating: 'excellent' | 'good' | 'neutral' | 'challenging';
         if (personalDay === lifePathNumber) {
           rating = 'excellent';
-        } else if ([1, 3, 5, 9].includes(personalDay)) {
+        } else if ([1, 3, 5, 9, 11, 22, 33].includes(personalDay)) {
+          rating = 'excellent';
+        } else if ([2, 6].includes(personalDay)) {
           rating = 'good';
-        } else if ([4, 7, 8].includes(personalDay)) {
-          rating = 'neutral';
         } else {
           rating = 'neutral';
         }
 
-        // Master number days are always powerful
-        if ([11, 22, 33].includes(personalDay)) {
-          rating = 'excellent';
-        }
+        const dayInfo = personalDayThemes[personalDay] || { theme: 'Balance', activities: ['Routine tasks', 'Rest'], description: 'A day for steady progress.', why: 'A period of stabilization.' };
 
-        const dayInfo = personalDayThemes[personalDay] || { theme: 'Balance', activities: ['Routine tasks', 'Rest'] };
+        // Generate personalized reasoning
+        const personalizedWhy = getPersonalizedReasoning(lifePathNumber, personalDay);
 
         dayRatings.push({
           date: dateStr,
@@ -1100,8 +1130,8 @@ export async function registerRoutes(
           rating,
           theme: dayInfo.theme,
           activities: dayInfo.activities,
-          why: (dayInfo as any).why,
-          description: (dayInfo as any).description,
+          why: personalizedWhy,
+          description: dayInfo.description,
         });
       }
 
