@@ -9,6 +9,7 @@ import { Calendar, Sparkles, ArrowRight, ArrowLeft, Clock, MapPin, User, Loader2
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { format } from 'date-fns';
+import { formatUTCDate, parseUTCDate } from '@shared/dateUtils';
 
 export interface ProfileData {
   odisId: string;
@@ -54,7 +55,7 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
         if (target.closest('[role="listbox"]') || target.closest('[role="dialog"]')) {
           return;
         }
-        
+
         if (step < totalSteps && canProceedToNext()) {
           e.preventDefault();
           goToNextStep();
@@ -81,7 +82,7 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
       onComplete({
         odisId: user.odisId,
         fullName: user.fullName,
-        birthDate: new Date(user.birthDate),
+        birthDate: parseUTCDate(user.birthDate),
         birthTime: user.birthTime || '12:00',
         birthLocation: user.birthLocation || 'Unknown',
       });
@@ -96,7 +97,7 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
     if (fullName && birthDate) {
       createProfileMutation.mutate({
         fullName,
-        birthDate: format(birthDate, 'yyyy-MM-dd'),
+        birthDate: formatUTCDate(birthDate),
         birthTime,
         birthLocation,
       });
@@ -143,7 +144,7 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
       <Card variant="frosted" className="w-full max-w-md relative overflow-hidden">
         <div className="absolute -top-20 -right-20 w-40 h-40 bg-amber-a3 rounded-full blur-3xl" />
         <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-violet-a3 rounded-full blur-3xl" />
-        
+
         <CardHeader className="text-center relative z-10">
           <div className="w-16 h-16 mx-auto mb-4 rounded-lg bg-gold-gradient flex items-center justify-center shadow-lg animate-scale-in">
             <StepIcon className="w-8 h-8 text-gray-1" />
@@ -335,9 +336,8 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
             {Array.from({ length: totalSteps }, (_, i) => i + 1).map((s) => (
               <div
                 key={s}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  s === step ? 'bg-amber-9' : s < step ? 'bg-amber-7' : 'bg-gray-6'
-                }`}
+                className={`w-2 h-2 rounded-full transition-colors ${s === step ? 'bg-amber-9' : s < step ? 'bg-amber-7' : 'bg-gray-6'
+                  }`}
               />
             ))}
           </div>

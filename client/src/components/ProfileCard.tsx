@@ -1,9 +1,10 @@
-import { 
-  calculateComprehensiveProfile, 
+import {
+  calculateComprehensiveProfile,
   getNumberMeaning,
-  type FullProfile 
+  type FullProfile
 } from '@/lib/numerology';
 import { ProfileData } from '@/components/ProfileSetup';
+import { displayUTCDate } from '@shared/dateUtils';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Star, Flame, Wind, Droplets, Mountain, Zap, Heart, Brain, Target } from 'lucide-react';
@@ -38,7 +39,7 @@ export function ProfileCard({ profile }: ProfileCardProps) {
   return (
     <Card variant="frosted" className="overflow-hidden relative" data-testid="card-profile">
       <div className="absolute inset-0 bg-gradient-to-br from-amber-a2 via-transparent to-violet-a2 pointer-events-none" />
-      
+
       <CardHeader className="relative pb-0">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
@@ -50,7 +51,7 @@ export function ProfileCard({ profile }: ProfileCardProps) {
               Life Path {fullProfile.lifePathNumber}
             </Badge>
             <p className="text-0 text-gray-10">
-              {profile.birthDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              {displayUTCDate(profile.birthDate, { month: 'short', day: 'numeric', year: 'numeric' })}
             </p>
           </div>
         </div>

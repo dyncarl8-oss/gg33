@@ -8,6 +8,7 @@ import { ProfileOverview } from '@/components/ProfileOverview';
 import { PersonalityInsights } from '@/components/PersonalityInsights';
 import { DailyEnergy } from '@/components/DailyEnergy';
 import { ExternalLink } from 'lucide-react';
+import { parseUTCDate } from '@shared/dateUtils';
 
 interface MembershipInfo {
   hasMembership: boolean;
@@ -27,7 +28,7 @@ interface WhopUserData {
 export default function Home() {
   const [isCalculating, setIsCalculating] = useState(false);
   const [pendingProfile, setPendingProfile] = useState<ProfileData | null>(null);
-  
+
   const savedOdisId = localStorage.getItem(ODIS_ID_KEY);
   const [odisId, setOdisId] = useState<string | null>(savedOdisId);
 
@@ -61,7 +62,7 @@ export default function Home() {
   const profile: ProfileData | null = profileData ? {
     odisId: profileData.odisId,
     fullName: profileData.fullName,
-    birthDate: new Date(profileData.birthDate),
+    birthDate: parseUTCDate(profileData.birthDate),
     birthTime: profileData.birthTime || '12:00',
     birthLocation: profileData.birthLocation || 'Unknown',
   } : null;
@@ -99,7 +100,7 @@ export default function Home() {
   };
 
   const isLoadingProfile = isProfileLoading && !profileData && odisId;
-  
+
   if (isLoadingProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -130,11 +131,11 @@ export default function Home() {
     <>
       <StarField />
       <Navigation />
-      
+
       <main className="pt-16 pb-12 px-4 min-h-screen" data-testid="dashboard">
         <div className="w-full max-w-6xl mx-auto space-y-6">
           <ProfileOverview profile={profile} whopUser={whopUser} isPro={isPro} />
-          
+
           <div className="grid lg:grid-cols-2 gap-6 items-stretch">
             <PersonalityInsights profile={profile} />
             <DailyEnergy profile={profile} />

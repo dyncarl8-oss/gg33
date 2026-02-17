@@ -10,21 +10,21 @@ export interface FullProfile {
   attitudeNumber: number;
   generationNumber: number;
   dayOfBirthNumber: number;
-  
+
   // Name Numbers (from full name)
   expressionNumber: number;
   soulUrgeNumber: number;
   personalityNumber: number;
   maturityNumber: number;
-  
+
   // Astrology
   chineseZodiac: ChineseZodiac;
   westernZodiac: WesternZodiac;
-  
+
   // Energy
   energySignature: string;
   dailyEnergy: number;
-  
+
   // Insights
   personality: PersonalityInsights;
 }
@@ -106,15 +106,15 @@ export function calculateLifePathNumber(birthDate: Date): number {
   const month = birthDate.getUTCMonth() + 1;
   const day = birthDate.getUTCDate();
   const year = birthDate.getUTCFullYear();
-  
+
   // Reduce each component separately first
   const monthReduced = reduceToSingleDigit(month, true);
   const dayReduced = reduceToSingleDigit(day, true);
-  
+
   // For year, sum digits first then reduce
   const yearDigitsSum = year.toString().split('').reduce((sum, d) => sum + parseInt(d), 0);
   const yearReduced = reduceToSingleDigit(yearDigitsSum, true);
-  
+
   // Sum and reduce
   const total = monthReduced + dayReduced + yearReduced;
   return reduceToSingleDigit(total, true);
@@ -126,12 +126,12 @@ export function calculateLifePathNumber(birthDate: Date): number {
 
 export function calculateExpressionNumber(fullName: string): number {
   const cleanName = fullName.toUpperCase().replace(/[^A-Z]/g, '');
-  
+
   let total = 0;
   for (const letter of cleanName) {
     total += letterValues[letter] || 0;
   }
-  
+
   return reduceToSingleDigit(total, true);
 }
 
@@ -141,14 +141,14 @@ export function calculateExpressionNumber(fullName: string): number {
 
 export function calculateSoulUrgeNumber(fullName: string): number {
   const cleanName = fullName.toUpperCase().replace(/[^A-Z]/g, '');
-  
+
   let total = 0;
   for (const letter of cleanName) {
     if (vowels.includes(letter)) {
       total += letterValues[letter] || 0;
     }
   }
-  
+
   return reduceToSingleDigit(total, true);
 }
 
@@ -158,14 +158,14 @@ export function calculateSoulUrgeNumber(fullName: string): number {
 
 export function calculatePersonalityNumber(fullName: string): number {
   const cleanName = fullName.toUpperCase().replace(/[^A-Z]/g, '');
-  
+
   let total = 0;
   for (const letter of cleanName) {
     if (!vowels.includes(letter)) {
       total += letterValues[letter] || 0;
     }
   }
-  
+
   return reduceToSingleDigit(total, true);
 }
 
@@ -177,7 +177,7 @@ export function calculateMaturityNumber(lifePathNumber: number, expressionNumber
   // Use base values for master numbers in calculation
   const lp = lifePathNumber > 9 ? reduceToSingleDigit(lifePathNumber, false) : lifePathNumber;
   const exp = expressionNumber > 9 ? reduceToSingleDigit(expressionNumber, false) : expressionNumber;
-  
+
   return reduceToSingleDigit(lp + exp, true);
 }
 
@@ -188,7 +188,7 @@ export function calculateMaturityNumber(lifePathNumber: number, expressionNumber
 export function calculateAttitudeNumber(birthDate: Date): number {
   const month = birthDate.getUTCMonth() + 1;
   const day = birthDate.getUTCDate();
-  
+
   const total = month + day;
   return reduceToSingleDigit(total, true);
 }
@@ -199,7 +199,7 @@ export function calculateAttitudeNumber(birthDate: Date): number {
 
 export function calculateGenerationNumber(birthDate: Date): number {
   const year = birthDate.getUTCFullYear();
-  
+
   // Sum all digits of the year
   const yearSum = year.toString().split('').reduce((sum, d) => sum + parseInt(d), 0);
   return reduceToSingleDigit(yearSum, true);
@@ -230,10 +230,10 @@ export function calculateChineseZodiac(birthDate: Date): ChineseZodiac {
   const animalIndex = (year - 4) % 12;
   const elementIndex = Math.floor((year - 4) % 10 / 2);
   const yinYang = year % 2 === 0 ? 'Yang' : 'Yin';
-  
+
   const animal = chineseAnimals[animalIndex];
   const element = chineseElements[elementIndex];
-  
+
   return {
     animal,
     element,
@@ -257,7 +257,7 @@ function getAnimalTraits(animal: string): string[] {
     'Dog': ['Loyal', 'Honest', 'Helpful', 'Faithful'],
     'Pig': ['Compassionate', 'Generous', 'Diligent', 'Calm'],
   };
-  
+
   return traits[animal] || ['Mysterious', 'Unique'];
 }
 
@@ -307,10 +307,10 @@ const zodiacDateRanges: [number, number, number, number][] = [
 export function calculateWesternZodiac(birthDate: Date): WesternZodiac {
   const month = birthDate.getUTCMonth() + 1;
   const day = birthDate.getUTCDate();
-  
+
   for (let i = 0; i < zodiacDateRanges.length; i++) {
     const [startMonth, startDay, endMonth, endDay] = zodiacDateRanges[i];
-    
+
     // Handle Capricorn which spans year boundary
     if (startMonth > endMonth) {
       if ((month === startMonth && day >= startDay) || (month === endMonth && day <= endDay)) {
@@ -318,12 +318,12 @@ export function calculateWesternZodiac(birthDate: Date): WesternZodiac {
       }
     } else {
       if ((month === startMonth && day >= startDay) || (month === endMonth && day <= endDay) ||
-          (month > startMonth && month < endMonth)) {
+        (month > startMonth && month < endMonth)) {
         return zodiacSigns[i];
       }
     }
   }
-  
+
   // Default to Capricorn
   return zodiacSigns[0];
 }
@@ -468,7 +468,7 @@ export function getNumberMeaning(number: number): NumberMeaning {
 export function calculateEnergySignature(birthDate: Date): string {
   const lifePathNumber = calculateLifePathNumber(birthDate);
   const zodiac = calculateChineseZodiac(birthDate);
-  
+
   const energyMap: Record<number, string> = {
     1: 'Fire Initiator',
     2: 'Water Harmonizer',
@@ -483,7 +483,7 @@ export function calculateEnergySignature(birthDate: Date): string {
     22: 'Reality Architect',
     33: 'Love Teacher',
   };
-  
+
   return `${zodiac.element} ${energyMap[lifePathNumber] || 'Energy'}`;
 }
 
@@ -497,46 +497,46 @@ export function calculateDailyEnergyScore(birthDate: Date, targetDate: Date = ne
   const personalMonth = calculatePersonalMonth(birthDate, targetDate);
   const personalDay = calculatePersonalDay(birthDate, targetDate);
   const universalDay = calculateLifePathNumber(targetDate);
-  
+
   // Base score
   let score = 50;
-  
+
   // Life path alignment with universal day
   if (lifePathNumber === universalDay) score += 20;
   else if (Math.abs(lifePathNumber - universalDay) <= 2) score += 10;
-  
+
   // Personal cycles alignment
   if (personalDay === lifePathNumber) score += 15;
   if (personalMonth === lifePathNumber) score += 10;
   if (personalYear === lifePathNumber) score += 5;
-  
+
   // Master number bonus
   if ([11, 22, 33].includes(universalDay)) score += 5;
   if ([11, 22, 33].includes(lifePathNumber)) score += 3;
-  
+
   // Clamp between 0-100
   return Math.max(0, Math.min(100, score));
 }
 
 function calculatePersonalYear(birthDate: Date, targetDate: Date): number {
-  const month = birthDate.getMonth() + 1;
-  const day = birthDate.getDate();
-  const year = targetDate.getFullYear();
-  
+  const month = birthDate.getUTCMonth() + 1;
+  const day = birthDate.getUTCDate();
+  const year = targetDate.getUTCFullYear();
+
   return reduceToSingleDigit(month + day + year, true);
 }
 
 function calculatePersonalMonth(birthDate: Date, targetDate: Date): number {
   const personalYear = calculatePersonalYear(birthDate, targetDate);
-  const month = targetDate.getMonth() + 1;
-  
+  const month = targetDate.getUTCMonth() + 1;
+
   return reduceToSingleDigit(personalYear + month, true);
 }
 
 function calculatePersonalDay(birthDate: Date, targetDate: Date): number {
   const personalMonth = calculatePersonalMonth(birthDate, targetDate);
-  const day = targetDate.getDate();
-  
+  const day = targetDate.getUTCDate();
+
   return reduceToSingleDigit(personalMonth + day, true);
 }
 
@@ -552,28 +552,28 @@ export function generatePersonalityParagraph(
   const expressionNumber = calculateExpressionNumber(fullName);
   const soulUrgeNumber = calculateSoulUrgeNumber(fullName);
   const maturityNumber = calculateMaturityNumber(lifePathNumber, expressionNumber);
-  
+
   const lifePathMeaning = getNumberMeaning(lifePathNumber);
   const expressionMeaning = getNumberMeaning(expressionNumber);
   const soulUrgeMeaning = getNumberMeaning(soulUrgeNumber);
   const maturityMeaning = getNumberMeaning(maturityNumber);
-  
+
   const firstName = fullName.split(' ')[0];
-  
+
   // Build a personalized paragraph
   let paragraph = `${firstName}'s Life Path Number ${lifePathNumber} suggests a foundational desire for ${lifePathMeaning.keywords.join(', ').toLowerCase()}. `;
   paragraph += `You are a natural ${lifePathMeaning.title.toLowerCase().replace('the ', '')}, someone who thrives on ${lifePathMeaning.strengths[0].toLowerCase()} and ${lifePathMeaning.strengths[1].toLowerCase()}. `;
-  
+
   if ([11, 22, 33].includes(expressionNumber)) {
     paragraph += `However, the Expression Number ${expressionNumber}, a Master Number, elevates this with a powerful ${expressionMeaning.keywords[0].toLowerCase()} quality. `;
     paragraph += `You possess a unique ability to bridge the material and spiritual, often having profound insights and a vision for the greater good. `;
   } else {
     paragraph += `Your Expression Number ${expressionNumber} reveals how you present yourself to the world through ${expressionMeaning.keywords[0].toLowerCase()} and ${expressionMeaning.strengths[0].toLowerCase()}. `;
   }
-  
+
   paragraph += `Your Soul Urge ${soulUrgeNumber} reinforces a deep craving for ${soulUrgeMeaning.keywords[0].toLowerCase()}, desiring ${soulUrgeMeaning.strengths[0].toLowerCase()} in all endeavors. `;
   paragraph += `The Maturity Number ${maturityNumber} indicates that as you grow, you will increasingly embody ${maturityMeaning.strengths[0].toLowerCase()}, ${maturityMeaning.strengths[1].toLowerCase()}, and a strong sense of ${maturityMeaning.keywords[0].toLowerCase()}, becoming a pillar of support for others.`;
-  
+
   return paragraph;
 }
 
@@ -590,15 +590,15 @@ export function generateComprehensiveInsights(
   const soulUrgeNumber = calculateSoulUrgeNumber(fullName);
   const westernZodiac = calculateWesternZodiac(birthDate);
   const chineseZodiac = calculateChineseZodiac(birthDate);
-  
+
   const lifePathMeaning = getNumberMeaning(lifePathNumber);
   const expressionMeaning = getNumberMeaning(expressionNumber);
   const soulUrgeMeaning = getNumberMeaning(soulUrgeNumber);
-  
+
   // Get western zodiac traits from the zodiacSigns array
   const westernZodiacInfo = zodiacSigns.find(z => z.sign === westernZodiac.sign);
   const westernTraits = westernZodiacInfo?.traits || [];
-  
+
   // Combine strengths from multiple sources
   const allStrengths = [
     ...lifePathMeaning.strengths.slice(0, 2),
@@ -607,7 +607,7 @@ export function generateComprehensiveInsights(
     ...westernTraits.slice(0, 1),
     ...chineseZodiac.traits.slice(0, 1),
   ];
-  
+
   // Combine challenges
   const allChallenges = [
     ...lifePathMeaning.challenges.slice(0, 2),
@@ -616,15 +616,15 @@ export function generateComprehensiveInsights(
     `Balancing ${lifePathMeaning.keywords[0]} with ${expressionMeaning.keywords[0]}`,
     'Potential for overthinking',
   ];
-  
+
   // Generate paragraph
   const paragraph = generatePersonalityParagraph(fullName, birthDate);
-  
+
   // Deduplicate arrays
   const uniqueStrengths = Array.from(new Set(allStrengths)).slice(0, 7);
   const uniqueChallenges = Array.from(new Set(allChallenges)).slice(0, 7);
   const uniqueColors = Array.from(new Set([...lifePathMeaning.luckyColors, ...expressionMeaning.luckyColors.slice(0, 1)]));
-  
+
   return {
     paragraph,
     strengths: uniqueStrengths,
@@ -643,7 +643,7 @@ export function calculateFullProfile(birthDate: Date): NumerologyProfile {
   const chineseZodiac = calculateChineseZodiac(birthDate);
   const energySignature = calculateEnergySignature(birthDate);
   const meaning = getLifePathMeaning(lifePathNumber);
-  
+
   return {
     lifePathNumber,
     chineseZodiac,
@@ -668,21 +668,21 @@ export function calculateComprehensiveProfile(
   const attitudeNumber = calculateAttitudeNumber(birthDate);
   const generationNumber = calculateGenerationNumber(birthDate);
   const dayOfBirthNumber = calculateDayOfBirthNumber(birthDate);
-  
+
   // Name Numbers (from full name)
   const expressionNumber = calculateExpressionNumber(fullName);
   const soulUrgeNumber = calculateSoulUrgeNumber(fullName);
   const personalityNumber = calculatePersonalityNumber(fullName);
   const maturityNumber = calculateMaturityNumber(lifePathNumber, expressionNumber);
-  
+
   const chineseZodiac = calculateChineseZodiac(birthDate);
   const westernZodiac = calculateWesternZodiac(birthDate);
-  
+
   const energySignature = calculateEnergySignature(birthDate);
   const dailyEnergy = calculateDailyEnergyScore(birthDate);
-  
+
   const personality = generateComprehensiveInsights(fullName, birthDate);
-  
+
   return {
     // Core Numbers
     lifePathNumber,
@@ -717,7 +717,7 @@ export function calculateDailyEnergy(date: Date = new Date()): {
   donts: string[];
 } {
   const dayNumber = calculateLifePathNumber(date);
-  
+
   const dailyThemes: Record<number, {
     theme: string;
     advice: string;
@@ -779,10 +779,10 @@ export function calculateDailyEnergy(date: Date = new Date()): {
       donts: ['Hold grudges', 'Start new things', 'Be selfish', 'Cling to past'],
     },
   };
-  
+
   const lookupNumber = dayNumber > 9 ? (dayNumber === 11 ? 2 : dayNumber === 22 ? 4 : 6) : dayNumber;
   const daily = dailyThemes[lookupNumber] || dailyThemes[1];
-  
+
   return {
     universalDay: dayNumber,
     ...daily,
@@ -815,7 +815,7 @@ export interface ComprehensiveCompatibility {
   overallScore: number;
   level: 'Avoid' | 'Challenging' | 'Neutral' | 'Harmonious' | 'Ideal';
   description: string;
-  
+
   dimensions: {
     lifePath: DimensionScore;
     expression: DimensionScore;
@@ -824,14 +824,14 @@ export interface ComprehensiveCompatibility {
     attitude: DimensionScore;
     dayOfBirth: DimensionScore;
   };
-  
+
   zodiac: ZodiacCompatibility;
-  
+
   strengths: string[];
   challenges: string[];
   growthOpportunities: string[];
   communicationTips: string[];
-  
+
   person1Profile: FullProfile;
   person2Profile: FullProfile;
 }
@@ -887,12 +887,12 @@ function calculateNumberCompatibility(num1: number, num2: number, context: strin
   // Normalize master numbers for comparison
   const n1 = num1 > 9 ? (num1 === 11 ? 2 : num1 === 22 ? 4 : 6) : num1;
   const n2 = num2 > 9 ? (num2 === 11 ? 2 : num2 === 22 ? 4 : 6) : num2;
-  
+
   const compat = lifePathCompatibility[num1] || lifePathCompatibility[n1];
-  
+
   let score = 50;
   let level: 'Low' | 'Moderate' | 'Good' | 'Excellent' = 'Moderate';
-  
+
   if (num1 === num2) {
     score = 85;
     level = 'Excellent';
@@ -906,9 +906,9 @@ function calculateNumberCompatibility(num1: number, num2: number, context: strin
     score = 35;
     level = 'Low';
   }
-  
+
   const insights = getNumberCompatibilityInsight(num1, num2, context, level);
-  
+
   return {
     score,
     level,
@@ -957,17 +957,17 @@ function getNumberCompatibilityInsight(num1: number, num2: number, context: stri
       'Low': `Your birth energies may create friction. Awareness helps.`,
     },
   };
-  
+
   return contextInsights[context]?.[level] || `Compatibility is ${level.toLowerCase()} in this dimension.`;
 }
 
 function calculateChineseZodiacCompatibility(z1: ChineseZodiac, z2: ChineseZodiac): { score: number; level: 'Challenging' | 'Neutral' | 'Harmonious' | 'Excellent'; insight: string } {
   const compat = chineseAnimalCompatibility[z1.animal];
-  
+
   let score = 50;
   let level: 'Challenging' | 'Neutral' | 'Harmonious' | 'Excellent' = 'Neutral';
   let insight = '';
-  
+
   // Animal compatibility
   if (z1.animal === z2.animal) {
     score = 75;
@@ -988,7 +988,7 @@ function calculateChineseZodiacCompatibility(z1: ChineseZodiac, z2: ChineseZodia
   } else {
     insight = `${z1.animal} and ${z2.animal} have a balanced, neutral relationship.`;
   }
-  
+
   // Element bonus
   const elementCompat: Record<string, string[]> = {
     'Wood': ['Water', 'Fire'],
@@ -997,25 +997,25 @@ function calculateChineseZodiacCompatibility(z1: ChineseZodiac, z2: ChineseZodia
     'Metal': ['Earth', 'Water'],
     'Water': ['Metal', 'Wood'],
   };
-  
+
   if (z1.element === z2.element) {
     score += 5;
   } else if (elementCompat[z1.element]?.includes(z2.element)) {
     score += 10;
   }
-  
+
   score = Math.min(100, score);
-  
+
   return { score, level, insight };
 }
 
 function calculateWesternZodiacCompatibility(z1: WesternZodiac, z2: WesternZodiac): { score: number; level: 'Challenging' | 'Neutral' | 'Harmonious' | 'Excellent'; insight: string } {
   let score = 50;
   let level: 'Challenging' | 'Neutral' | 'Harmonious' | 'Excellent' = 'Neutral';
-  
+
   const elemCompat = westernElementCompatibility[z1.element];
   const modCompat = westernModalityCompatibility[z1.modality];
-  
+
   // Element compatibility
   if (z1.element === z2.element) {
     score += 15;
@@ -1024,41 +1024,40 @@ function calculateWesternZodiacCompatibility(z1: WesternZodiac, z2: WesternZodia
   } else if (elemCompat?.challenging.includes(z2.element)) {
     score -= 10;
   }
-  
+
   // Modality compatibility
   if (modCompat?.harmonious.includes(z2.modality)) {
     score += 15;
   } else if (modCompat?.challenging.includes(z2.modality)) {
     score -= 5;
   }
-  
+
   // Same sign bonus
   if (z1.sign === z2.sign) {
     score += 10;
   }
-  
+
   score = Math.max(0, Math.min(100, score));
-  
+
   if (score >= 80) level = 'Excellent';
   else if (score >= 60) level = 'Harmonious';
   else if (score >= 40) level = 'Neutral';
   else level = 'Challenging';
-  
+
   const insight = z1.sign === z2.sign
     ? `Two ${z1.sign}s share the same cosmic DNA and understand each other intuitively.`
-    : `${z1.sign} (${z1.element}/${z1.modality}) and ${z2.sign} (${z2.element}/${z2.modality}) ${
-        level === 'Excellent' ? 'create a powerful cosmic harmony.' :
-        level === 'Harmonious' ? 'flow together naturally.' :
+    : `${z1.sign} (${z1.element}/${z1.modality}) and ${z2.sign} (${z2.element}/${z2.modality}) ${level === 'Excellent' ? 'create a powerful cosmic harmony.' :
+      level === 'Harmonious' ? 'flow together naturally.' :
         level === 'Neutral' ? 'bring different but balanced energies.' :
-        'may need to work on understanding their different cosmic rhythms.'
-      }`;
-  
+          'may need to work on understanding their different cosmic rhythms.'
+    }`;
+
   return { score, level, insight };
 }
 
 function generateStrengths(dimensions: ComprehensiveCompatibility['dimensions'], zodiac: ZodiacCompatibility): string[] {
   const strengths: string[] = [];
-  
+
   if (dimensions.lifePath.level === 'Excellent' || dimensions.lifePath.level === 'Good') {
     strengths.push('Aligned life purposes create a strong foundation');
   }
@@ -1080,17 +1079,17 @@ function generateStrengths(dimensions: ComprehensiveCompatibility['dimensions'],
   if (zodiac.westernLevel === 'Excellent' || zodiac.westernLevel === 'Harmonious') {
     strengths.push('Cosmic harmony in Western astrology');
   }
-  
+
   if (strengths.length === 0) {
     strengths.push('Opportunity for growth through differences');
   }
-  
+
   return strengths.slice(0, 5);
 }
 
 function generateChallenges(dimensions: ComprehensiveCompatibility['dimensions'], zodiac: ZodiacCompatibility): string[] {
   const challenges: string[] = [];
-  
+
   if (dimensions.lifePath.level === 'Low') {
     challenges.push('Life directions may pull in different ways');
   }
@@ -1112,13 +1111,13 @@ function generateChallenges(dimensions: ComprehensiveCompatibility['dimensions']
   if (zodiac.westernLevel === 'Challenging') {
     challenges.push('Elemental energies require balance');
   }
-  
+
   return challenges.slice(0, 4);
 }
 
 function generateGrowthOpportunities(dimensions: ComprehensiveCompatibility['dimensions']): string[] {
   const opportunities: string[] = [];
-  
+
   if (dimensions.lifePath.level === 'Moderate' || dimensions.lifePath.level === 'Low') {
     opportunities.push('Learn to appreciate different life approaches');
   }
@@ -1131,20 +1130,20 @@ function generateGrowthOpportunities(dimensions: ComprehensiveCompatibility['dim
   if (dimensions.personality.level === 'Moderate' || dimensions.personality.level === 'Low') {
     opportunities.push('Expand social horizons through different perspectives');
   }
-  
+
   opportunities.push('Use differences as teachers for personal growth');
   opportunities.push('Build bridges through patience and understanding');
-  
+
   return opportunities.slice(0, 4);
 }
 
 function generateCommunicationTips(p1: FullProfile, p2: FullProfile): string[] {
   const tips: string[] = [];
-  
+
   // Based on Expression numbers
   const exp1 = p1.expressionNumber;
   const exp2 = p2.expressionNumber;
-  
+
   if (exp1 === 1 || exp2 === 1) {
     tips.push('Give space for individual expression and leadership');
   }
@@ -1172,9 +1171,9 @@ function generateCommunicationTips(p1: FullProfile, p2: FullProfile): string[] {
   if (exp1 === 9 || exp2 === 9) {
     tips.push('Connect through shared ideals and bigger picture discussions');
   }
-  
+
   tips.push('Acknowledge and validate different communication styles');
-  
+
   return tips.slice(0, 4);
 }
 
@@ -1187,7 +1186,7 @@ export function calculateComprehensiveCompatibility(
   // Calculate full profiles for both
   const p1 = calculateComprehensiveProfile(name1, date1);
   const p2 = calculateComprehensiveProfile(name2, date2);
-  
+
   // Calculate dimension scores
   const dimensions = {
     lifePath: calculateNumberCompatibility(p1.lifePathNumber, p2.lifePathNumber, 'lifePath'),
@@ -1197,11 +1196,11 @@ export function calculateComprehensiveCompatibility(
     attitude: calculateNumberCompatibility(p1.attitudeNumber, p2.attitudeNumber, 'attitude'),
     dayOfBirth: calculateNumberCompatibility(p1.dayOfBirthNumber, p2.dayOfBirthNumber, 'dayOfBirth'),
   };
-  
+
   // Calculate zodiac compatibility
   const chineseCompat = calculateChineseZodiacCompatibility(p1.chineseZodiac, p2.chineseZodiac);
   const westernCompat = calculateWesternZodiacCompatibility(p1.westernZodiac, p2.westernZodiac);
-  
+
   const zodiac: ZodiacCompatibility = {
     chineseScore: chineseCompat.score,
     chineseLevel: chineseCompat.level,
@@ -1211,7 +1210,7 @@ export function calculateComprehensiveCompatibility(
     westernInsight: westernCompat.insight,
     elementHarmony: `${p1.chineseZodiac.element} meets ${p2.chineseZodiac.element}`,
   };
-  
+
   // Calculate weighted overall score
   const weights = {
     lifePath: 0.25,
@@ -1223,7 +1222,7 @@ export function calculateComprehensiveCompatibility(
     chinese: 0.10,
     western: 0.05,
   };
-  
+
   const overallScore = Math.round(
     dimensions.lifePath.score * weights.lifePath +
     dimensions.expression.score * weights.expression +
@@ -1234,7 +1233,7 @@ export function calculateComprehensiveCompatibility(
     zodiac.chineseScore * weights.chinese +
     zodiac.westernScore * weights.western
   );
-  
+
   // Determine overall level
   let level: 'Avoid' | 'Challenging' | 'Neutral' | 'Harmonious' | 'Ideal';
   if (overallScore < 30) level = 'Avoid';
@@ -1242,7 +1241,7 @@ export function calculateComprehensiveCompatibility(
   else if (overallScore < 60) level = 'Neutral';
   else if (overallScore < 80) level = 'Harmonious';
   else level = 'Ideal';
-  
+
   const descriptions: Record<typeof level, string> = {
     'Avoid': 'This pairing presents significant challenges that require careful navigation. Growth is possible but demands conscious effort and mutual understanding.',
     'Challenging': 'There are friction points in this relationship, but they offer valuable opportunities for personal growth. Patience and open communication are essential.',
@@ -1250,7 +1249,7 @@ export function calculateComprehensiveCompatibility(
     'Harmonious': 'Your energies flow together naturally. This pairing supports mutual growth and understanding, with natural resonance in key areas.',
     'Ideal': 'Exceptional alignment across multiple dimensions! Your energies amplify each other\'s strengths, creating a powerful and supportive connection.',
   };
-  
+
   return {
     overallScore,
     level,

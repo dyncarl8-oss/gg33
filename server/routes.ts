@@ -5,6 +5,7 @@ import { whopAuthMiddleware, requireWhopAuth, checkAccess, getWhopUserProfile, t
 import { generatePersonalityInsights, generateDailyEnergy, generateCompatibilityInsights, generateChatResponse, generateChatResponseWithContext, generateChatResponseStream, buildUserContext, type UserNumerologyProfile, type CompatibilityProfile, type ChatMessage } from "./gemini";
 import { parsedCues, totalCuesCount, type ParsedCue } from "./cuesData";
 import { Resend } from 'resend';
+import { parseUTCDate } from '../shared/dateUtils';
 
 export async function registerRoutes(
   httpServer: Server,
@@ -62,7 +63,7 @@ export async function registerRoutes(
       const user = await storage.createUser({
         odisId,
         fullName,
-        birthDate: new Date(birthDate),
+        birthDate: parseUTCDate(birthDate),
         birthTime,
         birthLocation,
         whopUserId,
@@ -168,7 +169,7 @@ export async function registerRoutes(
     try {
       const user = await storage.updateUser(odisId, {
         fullName,
-        birthDate: birthDate ? new Date(birthDate) : undefined,
+        birthDate: birthDate ? parseUTCDate(birthDate) : undefined,
         birthTime,
         birthLocation,
       });

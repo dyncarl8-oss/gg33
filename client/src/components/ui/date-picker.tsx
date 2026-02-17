@@ -41,20 +41,20 @@ export function DatePicker({
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false)
   const [month, setMonth] = React.useState<Date>(value || new Date(2000, 0, 1))
-  
-  const [monthVal, setMonthVal] = React.useState(value ? format(value, "MM") : "")
-  const [dayVal, setDayVal] = React.useState(value ? format(value, "dd") : "")
-  const [yearVal, setYearVal] = React.useState(value ? format(value, "yyyy") : "")
-  
+
+  const [monthVal, setMonthVal] = React.useState(value ? (value.getUTCMonth() + 1).toString().padStart(2, '0') : "")
+  const [dayVal, setDayVal] = React.useState(value ? value.getUTCDate().toString().padStart(2, '0') : "")
+  const [yearVal, setYearVal] = React.useState(value ? value.getUTCFullYear().toString() : "")
+
   const monthRef = React.useRef<HTMLInputElement>(null)
   const dayRef = React.useRef<HTMLInputElement>(null)
   const yearRef = React.useRef<HTMLInputElement>(null)
 
   React.useEffect(() => {
     if (value) {
-      setMonthVal(format(value, "MM"))
-      setDayVal(format(value, "dd"))
-      setYearVal(format(value, "yyyy"))
+      setMonthVal((value.getUTCMonth() + 1).toString().padStart(2, '0'))
+      setDayVal(value.getUTCDate().toString().padStart(2, '0'))
+      setYearVal(value.getUTCFullYear().toString())
       setMonth(value)
     }
   }, [value])
@@ -64,10 +64,10 @@ export function DatePicker({
       const monthNum = parseInt(m, 10)
       const dayNum = parseInt(d, 10)
       const yearNum = parseInt(y, 10)
-      
+
       if (monthNum >= 1 && monthNum <= 12 && dayNum >= 1 && dayNum <= 31 && yearNum >= fromYear && yearNum <= toYear) {
-        const date = new Date(yearNum, monthNum - 1, dayNum)
-        if (isValid(date) && date.getMonth() === monthNum - 1) {
+        const date = new Date(Date.UTC(yearNum, monthNum - 1, dayNum))
+        if (isValid(date) && (date.getUTCMonth() === monthNum - 1)) {
           onChange?.(date)
           setMonth(date)
         }
@@ -117,9 +117,9 @@ export function DatePicker({
 
   const handleBlur = () => {
     if (value) {
-      setMonthVal(format(value, "MM"))
-      setDayVal(format(value, "dd"))
-      setYearVal(format(value, "yyyy"))
+      setMonthVal((value.getUTCMonth() + 1).toString().padStart(2, '0'))
+      setDayVal(value.getUTCDate().toString().padStart(2, '0'))
+      setYearVal(value.getUTCFullYear().toString())
     }
   }
 
@@ -145,13 +145,13 @@ export function DatePicker({
 
   const handleCalendarMonthChange = (monthValue: string) => {
     const newMonth = new Date(month)
-    newMonth.setMonth(parseInt(monthValue))
+    newMonth.setUTCMonth(parseInt(monthValue))
     setMonth(newMonth)
   }
 
   const handleCalendarYearChange = (yearValue: string) => {
     const newMonth = new Date(month)
-    newMonth.setFullYear(parseInt(yearValue))
+    newMonth.setUTCFullYear(parseInt(yearValue))
     setMonth(newMonth)
   }
 
@@ -218,7 +218,7 @@ export function DatePicker({
           <div className="p-3 space-y-3">
             <div className="flex gap-2">
               <Select
-                value={month.getMonth().toString()}
+                value={month.getUTCMonth().toString()}
                 onValueChange={handleCalendarMonthChange}
               >
                 <SelectTrigger className="flex-1 h-9 bg-gray-3 border-gray-5">
@@ -233,7 +233,7 @@ export function DatePicker({
                 </SelectContent>
               </Select>
               <Select
-                value={month.getFullYear().toString()}
+                value={month.getUTCFullYear().toString()}
                 onValueChange={handleCalendarYearChange}
               >
                 <SelectTrigger className="w-24 h-9 bg-gray-3 border-gray-5">

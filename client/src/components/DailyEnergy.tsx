@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { 
+import {
   calculateComprehensiveProfile,
-  calculateDailyEnergyScore 
+  calculateDailyEnergyScore
 } from '@/lib/numerology';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ import { Check, X, Sparkles, Sun, Zap, Target, Quote } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProfileData } from '@/components/ProfileSetup';
 import { apiRequest } from '@/lib/queryClient';
+import { displayUTCDate } from '@shared/dateUtils';
 
 interface DailyEnergyProps {
   profile: ProfileData;
@@ -27,36 +28,36 @@ interface DailyEnergyResponse {
 
 function calculatePersonalDay(birthDate: Date): number {
   const today = new Date();
-  const birthMonth = birthDate.getMonth() + 1;
-  const birthDay = birthDate.getDate();
-  const currentMonth = today.getMonth() + 1;
-  const currentDay = today.getDate();
-  const currentYear = today.getFullYear();
-  
+  const birthMonth = birthDate.getUTCMonth() + 1;
+  const birthDay = birthDate.getUTCDate();
+  const currentMonth = today.getUTCMonth() + 1;
+  const currentDay = today.getUTCDate();
+  const currentYear = today.getUTCFullYear();
+
   let personalYear = birthMonth + birthDay + currentYear;
   while (personalYear > 9 && personalYear !== 11 && personalYear !== 22 && personalYear !== 33) {
     personalYear = personalYear.toString().split('').reduce((a, b) => a + parseInt(b), 0);
   }
-  
+
   let personalMonth = personalYear + currentMonth;
   while (personalMonth > 9 && personalMonth !== 11 && personalMonth !== 22 && personalMonth !== 33) {
     personalMonth = personalMonth.toString().split('').reduce((a, b) => a + parseInt(b), 0);
   }
-  
+
   let personalDay = personalMonth + currentDay;
   while (personalDay > 9 && personalDay !== 11 && personalDay !== 22 && personalDay !== 33) {
     personalDay = personalDay.toString().split('').reduce((a, b) => a + parseInt(b), 0);
   }
-  
+
   return personalDay;
 }
 
 function calculateUniversalDay(): number {
   const today = new Date();
-  const month = today.getMonth() + 1;
-  const day = today.getDate();
-  const year = today.getFullYear();
-  
+  const month = today.getUTCMonth() + 1;
+  const day = today.getUTCDate();
+  const year = today.getUTCFullYear();
+
   let sum = month + day + year;
   while (sum > 9 && sum !== 11 && sum !== 22 && sum !== 33) {
     sum = sum.toString().split('').reduce((a, b) => a + parseInt(b), 0);
@@ -71,7 +72,7 @@ export function DailyEnergy({ profile }: DailyEnergyProps) {
     profile.birthTime,
     profile.birthLocation
   );
-  
+
   const energyScore = calculateDailyEnergyScore(profile.birthDate);
   const personalDayNumber = calculatePersonalDay(profile.birthDate);
   const universalDayNumber = calculateUniversalDay();
@@ -82,7 +83,7 @@ export function DailyEnergy({ profile }: DailyEnergyProps) {
 
   const aiProfileData = {
     name: profile.fullName.split(' ')[0],
-    birthDate: profile.birthDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+    birthDate: displayUTCDate(profile.birthDate, { month: 'long', day: 'numeric', year: 'numeric' }),
     lifePathNumber: fullProfile.lifePathNumber,
     expressionNumber: fullProfile.expressionNumber,
     soulUrgeNumber: fullProfile.soulUrgeNumber,
@@ -150,7 +151,7 @@ export function DailyEnergy({ profile }: DailyEnergyProps) {
   return (
     <Card variant="frosted" className="overflow-hidden relative h-full" data-testid="card-daily-energy">
       <div className="absolute inset-0 bg-gradient-to-br from-violet-a2 via-transparent to-transparent pointer-events-none" />
-      
+
       <CardContent className="relative p-6 sm:p-8 flex flex-col h-full">
         <div className="flex items-center justify-between gap-4 mb-5">
           <div className="flex items-center gap-4">
@@ -176,7 +177,7 @@ export function DailyEnergy({ profile }: DailyEnergyProps) {
             <p className="text-2 text-gray-10 mb-6 max-w-xs">
               Discover your personalized energy forecast for today based on your unique numerology profile.
             </p>
-            <Button 
+            <Button
               size="lg"
               onClick={handleRevealEnergy}
               className="bg-gold-gradient text-gray-1 font-semibold"
@@ -223,7 +224,7 @@ export function DailyEnergy({ profile }: DailyEnergyProps) {
             </div>
 
             <div className="w-full h-2.5 bg-gray-a3 rounded-full overflow-hidden mb-5">
-              <div 
+              <div
                 className={`h-full ${energyLevel.bgColor} rounded-full transition-all duration-500`}
                 style={{ width: `${energyScore}%` }}
               />

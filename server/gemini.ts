@@ -333,9 +333,9 @@ function reduceToSingleDigit(num: number, preserveMasterNumbers = true): number 
 }
 
 function calculateLifePathNumber(birthDate: Date): number {
-  const month = birthDate.getMonth() + 1;
-  const day = birthDate.getDate();
-  const year = birthDate.getFullYear();
+  const month = birthDate.getUTCMonth() + 1;
+  const day = birthDate.getUTCDate();
+  const year = birthDate.getUTCFullYear();
 
   const monthReduced = reduceToSingleDigit(month, true);
   const dayReduced = reduceToSingleDigit(day, true);
@@ -371,20 +371,20 @@ function calculateMaturityNumber(lifePath: number, expression: number): number {
 }
 
 function calculateAttitudeNumber(birthDate: Date): number {
-  const month = birthDate.getMonth() + 1;
-  const day = birthDate.getDate();
+  const month = birthDate.getUTCMonth() + 1;
+  const day = birthDate.getUTCDate();
   return reduceToSingleDigit(month + day, true);
 }
 
 function calculateDayOfBirthNumber(birthDate: Date): number {
-  return reduceToSingleDigit(birthDate.getDate(), true);
+  return reduceToSingleDigit(birthDate.getUTCDate(), true);
 }
 
 function calculatePersonalDayNumber(birthDate: Date): number {
   const today = new Date();
-  const month = today.getMonth() + 1;
-  const day = today.getDate();
-  const year = today.getFullYear();
+  const month = today.getUTCMonth() + 1;
+  const day = today.getUTCDate();
+  const year = today.getUTCFullYear();
 
   const lifePathNumber = calculateLifePathNumber(birthDate);
   const universalDayNumber = reduceToSingleDigit(month + day + reduceToSingleDigit(year.toString().split('').reduce((sum, d) => sum + parseInt(d), 0), false), false);
@@ -394,17 +394,17 @@ function calculatePersonalDayNumber(birthDate: Date): number {
 
 function calculateUniversalDayNumber(): number {
   const today = new Date();
-  const month = today.getMonth() + 1;
-  const day = today.getDate();
-  const year = today.getFullYear();
+  const month = today.getUTCMonth() + 1;
+  const day = today.getUTCDate();
+  const year = today.getUTCFullYear();
 
   const yearSum = year.toString().split('').reduce((sum, d) => sum + parseInt(d), 0);
   return reduceToSingleDigit(month + day + yearSum, true);
 }
 
 function getWesternZodiac(birthDate: Date): { sign: string; element: string } {
-  const month = birthDate.getMonth() + 1;
-  const day = birthDate.getDate();
+  const month = birthDate.getUTCMonth() + 1;
+  const day = birthDate.getUTCDate();
 
   const zodiacData: Array<{ sign: string; element: string; startMonth: number; startDay: number; endMonth: number; endDay: number }> = [
     { sign: 'Capricorn', element: 'Earth', startMonth: 12, startDay: 22, endMonth: 1, endDay: 19 },
@@ -435,7 +435,7 @@ function getWesternZodiac(birthDate: Date): { sign: string; element: string } {
 }
 
 function getChineseZodiac(birthDate: Date): { animal: string; element: string } {
-  const year = birthDate.getFullYear();
+  const year = birthDate.getUTCFullYear();
   const animals = ['Rat', 'Ox', 'Tiger', 'Rabbit', 'Dragon', 'Snake', 'Horse', 'Goat', 'Monkey', 'Rooster', 'Dog', 'Pig'];
   const elements = ['Metal', 'Metal', 'Water', 'Water', 'Wood', 'Wood', 'Fire', 'Fire', 'Earth', 'Earth'];
 
