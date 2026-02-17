@@ -714,10 +714,10 @@ export async function registerRoutes(
     }
 
     // Parse date for zodiac calculations
-    const date = new Date(cue.foundedOrBirth);
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
+    const date = parseUTCDate(cue.foundedOrBirth);
+    const year = date.getUTCFullYear();
+    const month = date.getUTCMonth() + 1;
+    const day = date.getUTCDate();
 
     // Chinese Zodiac calculation (matches client/src/lib/numerology.ts)
     const chineseAnimals = ['Rat', 'Ox', 'Tiger', 'Rabbit', 'Dragon', 'Snake', 'Horse', 'Goat', 'Monkey', 'Rooster', 'Dog', 'Pig'];

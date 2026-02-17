@@ -1,8 +1,8 @@
 import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
-import { 
-  calculateComprehensiveProfile, 
-  getNumberMeaning 
+import {
+  calculateComprehensiveProfile,
+  getNumberMeaning
 } from '@/lib/numerology';
 import { ProfileData } from '@/components/ProfileSetup';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Heart, Sparkles, Brain, Target, Calendar, Star, Zap, Hash, Sun, TrendingUp, ChevronRight, Lock, Crown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { displayUTCDate } from '@shared/dateUtils';
 
 interface WhopUserData {
   profilePictureUrl: string | null;
@@ -88,22 +89,22 @@ export function ProfileOverview({ profile, whopUser, isPro = false }: ProfileOve
   const lifePathMeaning = getNumberMeaning(fullProfile.lifePathNumber);
   const firstName = profile.fullName.split(' ')[0];
   const initials = profile.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  
+
   const westernImage = getWesternZodiacImage(fullProfile.westernZodiac.sign);
   const chineseImage = getChineseZodiacImage(fullProfile.chineseZodiac.animal);
 
   return (
     <Card variant="frosted" className="overflow-hidden relative" data-testid="card-profile-overview">
       <div className="absolute inset-0 bg-gradient-to-br from-amber-a2 via-transparent to-transparent pointer-events-none" />
-      
+
       <CardContent className="relative p-6 sm:p-8">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col sm:flex-row sm:items-stretch justify-between gap-4">
             <div className="flex items-center gap-4">
               {whopUser?.profilePictureUrl ? (
                 <Avatar className="w-16 h-16 rounded-xl flex-shrink-0">
-                  <AvatarImage 
-                    src={whopUser.profilePictureUrl} 
+                  <AvatarImage
+                    src={whopUser.profilePictureUrl}
                     alt={whopUser.name || firstName}
                     className="object-cover"
                   />
@@ -122,7 +123,7 @@ export function ProfileOverview({ profile, whopUser, isPro = false }: ProfileOve
                 <div className="flex items-center gap-2 mt-1">
                   <Calendar className="w-4 h-4 text-gray-9" />
                   <p className="text-2 text-gray-10">
-                    {profile.birthDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    {displayUTCDate(profile.birthDate, { month: 'long', day: 'numeric', year: 'numeric' })}
                   </p>
                 </div>
               </div>
@@ -139,7 +140,7 @@ export function ProfileOverview({ profile, whopUser, isPro = false }: ProfileOve
                   <p className="text-1 text-gray-10">{lifePathMeaning.keywords[0]}</p>
                 </div>
               </div>
-              
+
             </div>
           </div>
 
@@ -152,8 +153,8 @@ export function ProfileOverview({ profile, whopUser, isPro = false }: ProfileOve
             </div>
 
             <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-a3 border border-gray-a4">
-              <img 
-                src={westernImage} 
+              <img
+                src={westernImage}
                 alt={fullProfile.westernZodiac.sign}
                 className="w-12 h-12 rounded-lg object-cover"
               />
@@ -165,8 +166,8 @@ export function ProfileOverview({ profile, whopUser, isPro = false }: ProfileOve
             </div>
 
             <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-a3 border border-gray-a4">
-              <img 
-                src={chineseImage} 
+              <img
+                src={chineseImage}
                 alt={fullProfile.chineseZodiac.animal}
                 className="w-12 h-12 rounded-lg object-cover"
               />

@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Sparkles, Zap, Palette, Lightbulb, Brain } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { apiRequest } from '@/lib/queryClient';
+import { displayUTCDate } from '@shared/dateUtils';
 
 interface PersonalityInsightsProps {
   profile: ProfileData;
@@ -31,7 +32,7 @@ export function PersonalityInsights({ profile }: PersonalityInsightsProps) {
 
   const aiProfileData = {
     name: profile.fullName.split(' ')[0],
-    birthDate: profile.birthDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+    birthDate: displayUTCDate(profile.birthDate, { month: 'long', day: 'numeric', year: 'numeric' }),
     lifePathNumber: fullProfile.lifePathNumber,
     expressionNumber: fullProfile.expressionNumber,
     soulUrgeNumber: fullProfile.soulUrgeNumber,
@@ -85,7 +86,7 @@ export function PersonalityInsights({ profile }: PersonalityInsightsProps) {
   return (
     <Card variant="frosted" className="overflow-hidden relative h-full" data-testid="card-personality">
       <div className="absolute inset-0 bg-gradient-to-br from-amber-a2 via-transparent to-transparent pointer-events-none" />
-      
+
       <CardContent className="relative p-6 sm:p-8 flex flex-col h-full">
         <div className="flex items-center gap-4 mb-5">
           <div className="w-12 h-12 rounded-xl bg-gold-gradient flex items-center justify-center flex-shrink-0">

@@ -51,7 +51,7 @@ export function ProfileCard({ profile }: ProfileCardProps) {
               Life Path {fullProfile.lifePathNumber}
             </Badge>
             <p className="text-0 text-gray-10">
-              {displayUTCDate(profile.birthDate, { month: 'short', day: 'numeric', year: 'numeric' })}
+              {displayUTCDate(profile.birthDate)}
             </p>
           </div>
         </div>

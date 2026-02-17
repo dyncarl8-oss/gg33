@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { parseUTCDate } from '@shared/dateUtils';
 import { Navigation } from '@/components/Navigation';
 import { StarField } from '@/components/StarField';
 import { CompatibilityChecker } from '@/components/CompatibilityChecker';
@@ -10,10 +12,13 @@ import { NavLink } from '@/components/NavLink';
 import { Heart, Sparkles, Lock, Crown } from 'lucide-react';
 import { UpgradeModal } from '@/components/UpgradeModal';
 
-interface UserProfile {
+interface ProfileData {
+  odisId: string;
   name: string;
   fullName: string;
   birthDate: Date;
+  birthTime: string;
+  birthLocation: string;
 }
 
 interface MeApiResponse {
@@ -21,6 +26,8 @@ interface MeApiResponse {
     odisId: string;
     fullName: string;
     birthDate: string;
+    birthTime?: string;
+    birthLocation?: string;
     isPro?: boolean;
   };
   needsOnboarding?: boolean;
@@ -32,9 +39,12 @@ export default function Compatibility() {
   const { data: meData, isLoading } = useQuery<MeApiResponse>({
     queryKey: ['/api/me'],
     queryFn: async () => {
-      const response = await fetch('/api/me');
-      if (!response.ok) return { needsOnboarding: true };
-      return response.json();
+      try {
+        return await apiRequest<MeApiResponse>('/api/me');
+      } catch (error) {
+        // If API request fails (e.g., 401 Unauthorized), assume needs onboarding
+        return { needsOnboarding: true };
+      }
     },
   });
 
@@ -45,11 +55,14 @@ export default function Compatibility() {
   }, [meData]);
 
   const isPro = meData?.user?.isPro ?? false;
-  
-  const profile: UserProfile | null = meData?.user ? {
+
+  const profile: ProfileData | null = meData?.user ? {
+    odisId: meData.user.odisId,
     fullName: meData.user.fullName,
     name: meData.user.fullName.split(' ')[0],
-    birthDate: new Date(meData.user.birthDate),
+    birthDate: parseUTCDate(meData.user.birthDate),
+    birthTime: meData.user.birthTime || '12:00',
+    birthLocation: meData.user.birthLocation || 'Unknown',
   } : null;
 
   if (isLoading) {
@@ -97,7 +110,7 @@ export default function Compatibility() {
     <>
       <StarField />
       <Navigation />
-      
+
       <main className="pt-20 pb-12 px-4 min-h-screen" data-testid="page-compatibility">
         <div className="container mx-auto max-w-4xl space-y-8">
           <div className="text-center">
@@ -114,8 +127,8 @@ export default function Compatibility() {
           </div>
 
           {isPro ? (
-            <CompatibilityChecker 
-              userBirthDate={profile.birthDate} 
+            <CompatibilityChecker
+              userBirthDate={profile.birthDate}
               userName={profile.name}
               userFullName={profile.fullName}
             />
@@ -135,8 +148,8 @@ export default function Compatibility() {
                 <p className="text-gray-11 text-2 mb-6 max-w-md mx-auto">
                   Unlock compatibility analysis to discover how your energy aligns with the people in your life.
                 </p>
-                <Button 
-                  variant="gold" 
+                <Button
+                  variant="gold"
                   size="lg"
                   onClick={() => setShowUpgradeModal(true)}
                   data-testid="button-unlock-compatibility"

@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { LoadingScreen } from '@/components/LoadingScreen';
+import { parseUTCDate } from '@shared/dateUtils';
 import { Navigation } from '@/components/Navigation';
 import { StarField } from '@/components/StarField';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -90,7 +92,7 @@ function LoadingSkeleton() {
 }
 
 function TrendingEnergiesDialog({ open, onClose, profileData }: { open: boolean; onClose: () => void; profileData: ProfileData | null }) {
-  const birthDate = profileData?.birthDate ? new Date(profileData.birthDate) : null;
+  const birthDate = profileData?.birthDate ? parseUTCDate(profileData.birthDate) : null;
   const lifePath = birthDate ? calculateLifePathNumber(birthDate) : null;
 
   const { data, isLoading, error } = useQuery({
